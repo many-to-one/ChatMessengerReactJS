@@ -1,0 +1,41 @@
+/* Header Styles */
+header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    background-color: #77037B; 
+    color: #fff; /* text color */
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 2
+  }
+  
+  nav ul {
+    list-style: none; /* Remove bullet points */
+    padding: 0;
+    margin: 0;
+    display: flex;
+  }
+  
+  nav ul li {
+    margin-right: 20px;
+    cursor: pointer;
+  }
+  
+  nav ul li:last-child {
+    margin-right: 0; /* Remove margin from the last list item */
+  }
+  
+  nav ul li a {
+    text-decoration: none;
+    color: #fff; /* Change link color to your preference */
+  }
+  
+.row_cont {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+  

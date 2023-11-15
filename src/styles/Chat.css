@@ -1,0 +1,189 @@
+/* Styles for the chat container */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* height: auto; */
+    min-height: 96vh;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* padding: 16px; */
+    background-color: #f9f9f9;
+    /* overflow: hidden; */
+    z-index: 1;
+  }
+  
+  .chat-container-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    height: 90vh;
+  }
+
+  .chat {
+    display: flex;
+    flex-direction: column;
+    margin-top: 65px;
+    list-style-type: none;
+    padding: 10px;
+    margin: 0;
+    overflow-y: auto;
+    padding-top: 40px;
+    overflow-anchor: none;
+  }
+
+  .userPhotoRight {
+    width: 40px;
+    height: 40px;
+    border: 1px solid gray;
+    border-radius: 100px;
+    /* margin-top: -20px; */
+    order: 2;
+  }
+
+  .userPhotoLeft {
+    width: 40px;
+    height: 40px;
+    border: 1px solid gray;
+    border-radius: 100px;
+    /* margin-top: -20px; */
+  }
+
+  .unread {
+    padding-left: 0;
+  }
+
+  .message {
+    border-radius: 30px;
+    /* box-shadow: 0px 15px 5px 0px rgba(0,0,0,0.5); */
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
+    position: relative;
+    margin-bottom: 30px;
+    width: auto;
+    min-width: 20px;
+    clear: both;
+  }
+
+  .message.right {
+	  padding: 0px 10px 0px 15px;
+    float: right;
+    width: auto;
+    min-width: 20%;
+    max-width: 70%;
+    background-color: rgba(153, 39, 134, 0.929);
+    color: #f9f9f9;
+  }
+
+  .message.left {
+    padding: 0px 10px 10px 15px;
+    float: left;
+    width: auto;
+    min-width: 20%;
+    max-width: 50%;
+  }
+
+  .message p {
+    margin: 0;
+  }
+  
+  .send {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px; /* Add padding as needed */
+    background-color: #f5f5f5; /* Background color for the input area */
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+  }
+  input {
+    flex-grow: 1; /* Allow the input field to grow to take available space */
+    padding: 10px; /* Add padding as desired */
+    border: 1px solid #ccc; /* Border styles */
+    border-radius: 5px;
+    margin-right: 10px; /* Margin between input and button */
+}
+ 
+.sendButton {
+  background-color: #007bff; /* Button background color */
+  color: #fff; /* Button text color */
+  padding: 10px 20px; /* Padding as desired */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.conv_header {
+  display: flex;
+  flex-direction: row;
+  /* justify-content: space-between; */
+  background-color: #77037B; 
+  color: #fff; /* text color */
+  padding: 10px;
+  position: sticky;
+  top: 0px;
+  z-index: 2;
+  height: 50px;
+}
+
+.conv_row_cont {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+}
+
+.confirm_row_cont {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 50px;
+  gap: 10px;
+}
+
+.name_del_row_cont {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 70%;
+  height: 50px;
+  /* gap: 10px; */
+}
+
+.conf_dialog {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  /* background-color: white; */
+}
+
+.conv_start {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+/* .chatPhoto {
+  padding: 5px;
+} */
+
+.head_column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0px;
+}
+
+.head_column p {
+  font-size: 10px;
+}

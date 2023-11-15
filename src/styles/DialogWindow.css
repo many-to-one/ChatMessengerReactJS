@@ -1,0 +1,15 @@
+.dialog-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    gap: 20px;
+    border-radius: 30px;
+    position: relative;
+    margin-bottom: 30px;
+    width: auto;
+    min-width: 20px;
+    clear: both;
+    background-color: rgba(153, 39, 134, 0.929);
+    padding: 10px;
+  }
