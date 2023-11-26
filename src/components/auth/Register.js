@@ -20,7 +20,7 @@ const Register = () => {
         return;
       }
       try {
-        const postData = { email, password };
+        const postData = { username, email, password };
         const response = await axios.post(`${serverIP}/auth/register/`, postData);
         console.log('response.data', response.data);
         nav('/login');

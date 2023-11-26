@@ -14,18 +14,22 @@ import NotFound from './components/auth/NotFound';
 import AllUsersResend from './components/AllUsersResend';
 import { UserProvider } from './context/userContext';
 import FindFriends from './components/FindFriends';
+import { Provider } from 'react-redux';
+import store from './store.js'
 
 
 
 function App() {
   return (
-    <UserProvider>
-      <div className="App">
-        <Router>
-          <AppContent />
-        </Router>
-      </div>
-    </UserProvider>
+    <Provider store={store}>
+      <UserProvider>
+        <div className="App">
+          <Router>
+            <AppContent />
+          </Router>
+        </div>
+      </UserProvider>
+    </Provider>
   );
 }
 
@@ -50,7 +54,7 @@ function AppContent() {
         <Route path="/allChats" element={<AllChats />} />
         <Route path="/allUsers" element={<AllUsers />} />
         <Route path="/findFriends" element={<FindFriends />} />
-        <Route path="/" element={<AllUsers />} />
+        <Route path="*" element={<AllUsers />} />
         <Route path="/allUsersResend" element={<AllUsersResend />} />
         <Route path="/conversation" element={<Conversation />} />
       </Routes>

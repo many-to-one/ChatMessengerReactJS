@@ -1,10 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import {wsIP} from '../config.js';
+import { serverIP, wsIP } from '../config.js';
 import { useNavigate } from 'react-router-dom';
 import '../styles/AllUsers.css';
 import { useUser } from '../context/userContext.js';
 import IncomingRequest from './IncomingRequest.js';
 import ChatWithUser from './ChatWithUser.js';
+import axios from 'axios';
+
+import { useDispatch, useSelector } from 'react-redux';
+import { setMessages } from '../features/messages/messagesSlice.js';
 
 const AllUsers = (params) => {
 
@@ -14,15 +18,40 @@ const AllUsers = (params) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [conversation, setConversation] = useState([]);
     const [friend, setFriend] = useState(null)
+    const conv_name = 1
 
 
     const navigate = useNavigate();
     const { user } = useUser();
 
+    const dispatch = useDispatch();
+    const allMessages = useSelector((state) => state.messages);
+
+      useEffect(() => {
+        console.log('allMessages', allMessages)
+
+        { allMessages.length === 0 &&
+          axios
+            .get(`${ serverIP }`, {
+              headers: {
+                Authorization: `Bearer ${user.token}`,
+              }
+            })
+            .then((response) => {
+              dispatch(setMessages(response.data.messages));
+              console.log('response', response.data.messages)
+            })
+            .catch((error) => {
+              console.log('Error messageList', error)
+              navigate('/login')
+            })
+        }
+      }, [])
+
       useEffect(() => {
         
         if ( user ) {
-          const ws = new WebSocket(`${wsIP}/ws/AllUsers/?userId=${user.id}&token=${user.token}`);
+          const ws = new WebSocket(`${wsIP}/ws/AllUsers/${conv_name}/?userId=${user.id}&token=${user.token}`);
           setSocket(ws)
 
           console.log('getAllUsers', ws)
@@ -43,11 +72,11 @@ const AllUsers = (params) => {
 
             console.log('addFriend data', data);
 
-          } else if (data.type === 'checkFriendRequest') {
+          } else if (data.type === 'checkFriendRequest') { 
 
             console.log('checkFriendRequest data', data);
 
-          } else if (data.type == 'confirmRequest') {
+          } else if (data.type === 'confirmRequest') {
 
             console.log('confirmRequest data', data);
             setUsers(data.users)
@@ -62,6 +91,8 @@ const AllUsers = (params) => {
 
           } else if (data.type === 'blockResponse') {
             console.log('blockResponse', data)
+          } else if (data.type === 'mess_count') {
+            console.log('mess_count data', data);
           }
         }
         
@@ -75,7 +106,7 @@ const AllUsers = (params) => {
           navigate("/login")
         }
 
-      }, [])
+}, [])
 
 
 
