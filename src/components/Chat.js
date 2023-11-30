@@ -8,14 +8,27 @@ import ConfirmationDialog from './ConfirmationDialog.js';
 import { useUser } from '../context/userContext.js';
 import AddUsersToChat from './AddUsersToChat.js';
 
+import { useDispatch, useSelector } from 'react-redux';
+import { addMessage, removeMessage } from '../features/messages/messagesSlice.js';
+
 const Chat = (props) => {
 
   const { user } = useUser();
   const navigate = useNavigate();
 
+   // Reseived props:
+   const location = useLocation()
+   const chat = location.state 
+   const chatID = chat.id
+
+  const dispatch = useDispatch();
+  const allChatMessages = useSelector((state) => state.messages);
+  const messages = allChatMessages.filter((message) => message.chat_id === chat.id);
+  console.log('allChatMessages', allChatMessages)
+
   const [data, setData] = useState(null)
 
-  const [messages, setMessages] = useState([]);
+  // const [messages, setMessages] = useState([]);
   const [usersPhotos, setUsersPhotos] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState(null);
@@ -32,11 +45,6 @@ const Chat = (props) => {
 
   // const to make a new message been on the bottom of the chat
   const chatContainerRef = useRef(null);
-
-  // Reseived props:
-  const location = useLocation()
-  const chat = location.state 
-  const chatID = chat.id
 
   const nav = useNavigate()
 
@@ -62,43 +70,43 @@ const Chat = (props) => {
   //  ################################################################################################### //
 
 
-  const allMessages = async () => {
+  // const allMessages = async () => {
 
-    axios
-    .get(
-      `${serverIP}/allMessages/${chatID}/`,
-      { 
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      }
-    )
-    .then((response) => {
-      console.log('response.data Chat', response.data)
-      for (const message of response.data.messages) {
-        const messageObject = {
-          id: message.id,
-          username: message.username,
-          message: message.content,
-          photo: message.photo,
-        };
-        mess.push(messageObject);
-      }
-      setMessages(mess)
-      setChatUsers(response.data.chat.user)
-      setUsersPhotos(response.data.photos)
-      console.log('usersPhotos', usersPhotos)
-    })
-    .catch((error) => {
-      console.error('Error fetching conversation data:', error);
-      if(error.response.status === 403){
-        nav('/login')
-      }else if (error.response.status === 404){
-        nav('/404')
-      }
-    });
+  //   axios
+  //   .get(
+  //     `${serverIP}/allMessages/${chatID}/`,
+  //     { 
+  //       headers: {
+  //         Authorization: `Bearer ${user.token}`,
+  //       },
+  //     }
+  //   )
+  //   .then((response) => {
+  //     console.log('response.data Chat', response.data)
+  //     for (const message of response.data.messages) {
+  //       const messageObject = {
+  //         id: message.id,
+  //         username: message.username,
+  //         message: message.content,
+  //         photo: message.photo,
+  //       };
+  //       mess.push(messageObject);
+  //     }
+  //     setMessages(mess)
+  //     setChatUsers(response.data.chat.user)
+  //     setUsersPhotos(response.data.photos)
+  //     console.log('usersPhotos', usersPhotos)
+  //   })
+  //   .catch((error) => {
+  //     console.error('Error fetching conversation data:', error);
+  //     if(error.response.status === 403){
+  //       nav('/login')
+  //     }else if (error.response.status === 404){
+  //       nav('/404')
+  //     }
+  //   });
 
-  }
+  // }
 
 
 
@@ -106,25 +114,25 @@ const Chat = (props) => {
   //  ##################################### CONNECT TO THE SOCKET ####################################### //
   //  ################################################################################################### //
 
-
+  const ws = new WebSocket(`${wsIP}/ws/chat/${chatID}/?userId=${user.id}&token=${user.token}`);
   
   useEffect(() => {
 
-    const ws = new WebSocket(`${wsIP}/ws/chat/${chatID}/?userId=${user.id}&token=${user.token}`);
-  setSocket(ws);
+    // const ws = new WebSocket(`${wsIP}/ws/chat/${chatID}/?userId=${user.id}&token=${user.token}`);
+  // setSocket(ws);
 
-    if(ws) {
-      ws.onopen = () => {
-        console.log('WebSocket connection opened');
-        allMessages()
-      };
-      ws.onclose = () => {
-        console.log('WebSocket connection closed');
-        nav('/login'); 
-      };
-    } else {
-      nav('/login')
-    }
+    // if(ws) {
+    //   ws.onopen = () => {
+    //     console.log('WebSocket connection opened');
+    //     // allMessages()
+    //   };
+    //   ws.onclose = () => {
+    //     console.log('WebSocket connection closed');
+    //     nav('/login'); 
+    //   };
+    // } else {
+    //   nav('/login')
+    // }
 
 
     // Receive data from server via socket
@@ -134,13 +142,26 @@ const Chat = (props) => {
       if (message.type === 'message_deleted') {
         console.log('message_deleted', message.id);
         // Handle message deletion by filtering out the deleted message
-        setMessages((prevMessages) => {
-          const updatedMessages = prevMessages.filter((msg) => msg.id !== message.id);
-          console.log('updatedMessages', updatedMessages);
-          return updatedMessages;
-        });
+        // setMessages((prevMessages) => {
+        //   const updatedMessages = prevMessages.filter((msg) => msg.id !== message.id);
+        //   console.log('updatedMessages', updatedMessages);
+        //   return updatedMessages;
+        // });
       } else if (message.type == 'added_message') {
-        setMessages((prevMessages) => [...prevMessages, { id: message.id, message: message.message, username: message.username, photo: message.photo }]);
+
+        dispatch(addMessage({
+          id: message.id,
+          message: message.message,
+          username: message.username,
+          user_id: message.user_id,
+          unread: message.unread,
+          photo: message.photo,
+          chat_id: message.chat_id,
+        }));
+
+        console.log('addMessage');
+
+        // setMessages((prevMessages) => [...prevMessages, { id: message.id, message: message.message, username: message.username, photo: message.photo }]);
         // scrollToBottom();
       } else if (message.type == 'added_users') {
         setSelectedUsers((prevMessages) => [...prevMessages, { users: message, }]);
@@ -178,11 +199,11 @@ const Chat = (props) => {
       }
     }
 
-    // setSocket(ws);
+    setSocket(ws);
 
     return () => {
-      if (socket) {
-        socket.close();
+      if (ws) {
+        ws.close();
       }
     };
 

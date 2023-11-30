@@ -4,7 +4,13 @@ import axios from 'axios';
 import {serverIP} from '../../config';
 import {useUser} from '../../context/userContext.js'
 
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser } from '../../features/messages/usersSlice.js'
+import { setMessages } from '../../features/messages/messagesSlice.js';
+
 const Logout = () => {
+
+  const dispatch = useDispatch();
 
   const { user } = useUser();
   const navigate = useNavigate();
@@ -13,6 +19,9 @@ const Logout = () => {
 
   // Handle user logout
   const handleLogout = async () => {
+
+    dispatch(setUser(null))
+    dispatch(setMessages(null))
 
     try {
 

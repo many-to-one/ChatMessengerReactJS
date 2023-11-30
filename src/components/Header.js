@@ -7,13 +7,22 @@ import {serverIP} from '../config.js';
 import '../styles/Header.css';
 import { useUser } from '../context/userContext.js';
 
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser, clearUsers } from '../features/messages/usersSlice.js'
+import { setMessages, clearMessages } from '../features/messages/messagesSlice.js';
+
 const Header = () => {
+
+  const dispatch = useDispatch();
 
   const navigate = useNavigate();
   const { user } = useUser();
   
    // Handle user logout
    const handleLogout = async () => {
+
+    dispatch(clearUsers())
+    dispatch(clearMessages())
 
     try {
       const userId = user.id;

@@ -9,15 +9,17 @@ import axios from 'axios';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { setMessages } from '../features/messages/messagesSlice.js';
+import { setUser, addUser, removeUser } from '../features/messages/usersSlice.js';
+
 
 const AllUsers = (params) => {
 
-    const [users, setUsers] = useState([])
+    // const [users, setUsers] = useState([])
     const [socket, setSocket] = useState([])
     const [incomingRequest, setIncomingRequest] = useState([])
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [conversation, setConversation] = useState([]);
-    const [friend, setFriend] = useState(null)
+    // const [selectedUser, setSelectedUser] = useState(null);
+    // const [conversation, setConversation] = useState([]);
+    // const [friend, setFriend] = useState(null)
     const conv_name = 1
 
 
@@ -26,6 +28,9 @@ const AllUsers = (params) => {
 
     const dispatch = useDispatch();
     const allMessages = useSelector((state) => state.messages);
+    const users = useSelector((state) => state.users);
+    console.log('users before', users)
+    // setUsers(usersList)
 
       useEffect(() => {
         console.log('allMessages', allMessages)
@@ -48,6 +53,37 @@ const AllUsers = (params) => {
         }
       }, [])
 
+
+      useEffect(() => {
+
+        if ( users.length === 0 ) {
+          friendList()
+        }
+
+      }, [user])
+
+
+      const friendList = () => {
+
+        axios
+            .get(`${ serverIP }/auth/friends/`, {
+              headers: {
+                Authorization: `Bearer ${user.token}`,
+              }
+            })
+            .then((response) => {
+              dispatch(setUser(response.data.user_data));
+              console.log('users after', users)
+              console.log('friends', response.data.user_data)
+            })
+            .catch((error) => {
+              console.log('Error friendsList', error)
+              // navigate('/login')
+            })
+
+      }
+
+
       useEffect(() => {
         
         if ( user ) {
@@ -64,8 +100,15 @@ const AllUsers = (params) => {
           if (data.type === 'allUsers') {
 
             console.log('allUsers', data, data.type);
-            console.log('friendReq', data.incomingFriendRequest);
-            setUsers(data.users)
+            console.log('friends_count', data.friends_count.count);
+
+            if ( users.length < data.friends_count.count ) {
+              friendList()
+              console.log('count < ');
+            }
+            // dispatch(setUser(data.users));
+
+            // setUsers(data.users)
             setIncomingRequest(data.incomingFriendRequest)
 
           } else if (data.type === 'addFriend') {
@@ -78,16 +121,17 @@ const AllUsers = (params) => {
 
           } else if (data.type === 'confirmRequest') {
 
-            console.log('confirmRequest data', data);
-            setUsers(data.users)
+            console.log('confirmRequest data', data.user);
+            // setUser(data.users)
+            dispatch(addUser(data.user));
             // Remove the added user from request list
-            {data.users.map((user) => {
+            // {data.user.map((user) => {
               setIncomingRequest((prevUsers) => {
                 // Use the filter method to remove the user with the specified id
-                const updatedUsers = prevUsers.filter((u) => u.id !== user.id);
+                const updatedUsers = prevUsers.filter((u) => u.id !== data.user.id);
                 return updatedUsers;
               });
-            })}
+            // })}
 
           } else if (data.type === 'blockResponse') {
             console.log('blockResponse', data)
@@ -124,6 +168,11 @@ const AllUsers = (params) => {
           console.log('confirmRequest', 'socket OPEN', id)
           socket.send(JSON.stringify({type: 'confirmRequest', requestId: id, userId: user.id}));
         }
+        setIncomingRequest((prevUsers) => {
+          // Use the filter method to remove the user with the specified id
+          const updatedUsers = prevUsers.filter((u) => u.id !== id);
+          return updatedUsers;
+        });
       }
 
 
@@ -152,7 +201,7 @@ const AllUsers = (params) => {
 
 
       const searchUsers = (text) => {
-        setUsers((prevUsers) => {
+        setUser((prevUsers) => {
           const updatedUsers = prevUsers.filter((u) => u.username.toLowerCase().includes(text.toLowerCase()))
           return updatedUsers;
         });
@@ -165,12 +214,12 @@ const AllUsers = (params) => {
 
           {incomingRequest ? (
             <div className="user-list-items">
-              {incomingRequest.map((user) => (
+              {incomingRequest.map((userR) => (
                 <IncomingRequest 
-                  user={user}
-                  blockUser={() => blockUser(user.id)}
-                  denyRequest={() => denyRequest(user.id)}
-                  confirmRequest={() => confirmRequest(user.id)}
+                  user={userR}
+                  blockUser={() => blockUser(userR.id)}
+                  denyRequest={() => denyRequest(userR.id)}
+                  confirmRequest={() => confirmRequest(userR.id)}
                 />
               ))}
               <hr></hr>
