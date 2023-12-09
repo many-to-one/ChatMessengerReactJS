@@ -9,6 +9,7 @@ import { useUser } from '../context/userContext.js';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser, clearUsers } from '../features/messages/usersSlice.js'
+import { clearFriendRequests } from '../features/messages/friendRequestSlice.js'
 import { setMessages, clearMessages } from '../features/messages/messagesSlice.js';
 
 const Header = () => {
@@ -23,6 +24,7 @@ const Header = () => {
 
     dispatch(clearUsers())
     dispatch(clearMessages())
+    // dispatch(clearFriendRequests())
 
     try {
       const userId = user.id;

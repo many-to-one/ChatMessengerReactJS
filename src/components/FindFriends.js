@@ -6,17 +6,24 @@ import { useUser } from '../context/userContext.js';
 import QuestionFriend from './QuestionFriend.js';
 import User from './User.js';
 
+import { useDispatch, useSelector } from 'react-redux';
+// import { addFriendRequest, removeFriendRequest, clearFriendRequests } from '../features/messages/friendRequestSlice.js';
+
 const FindFriends = (params) => {
 
     const [users, setUsers] = useState([])
     const [socket, setSocket] = useState([])
+    const [socketo, setSocketo] = useState([])
     const [outcomingRequest, setOutcomingRequest] = useState([])
     const [friend, setFriend] = useState(null)
     const [dialog, setDialog] = useState(false)
-
+    const conv_name = 1
 
     const navigate = useNavigate();
     const { user } = useUser();
+
+    const dispatch = useDispatch();
+    // const allFriendRequests = useSelector((state) => state.friendRequests);
 
 
     useEffect(() => {
@@ -27,7 +34,7 @@ const FindFriends = (params) => {
 
           console.log('getAllUsers', ws)
 
-        ws.onmessage = (event) => {
+          ws.onmessage = (event) => {
           const data = JSON.parse(event.data);
           if (data.type === 'allUsers') {
             setUsers(data.findFriends)
@@ -37,12 +44,16 @@ const FindFriends = (params) => {
                 setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id))
               }) }
             } if ( data.incomingFriendRequest ) { console.log('data.incomingFriendRequest !', data.incomingFriendRequest);
-              { data.incomingFriendRequest.map((user) => {
-                setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id))
-              }) }
-            }
+              { data.incomingFriendRequest.map((user_) => {
+                  setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user_.id))
+                  // dispatch(addFriendRequest({
+                  //   from: user_,
+                  //   to: user
+                  // }))
+                })}
+              }
             setOutcomingRequest(data.outComingFriendRequest)
-          } else if (data.type === 'addFriend') {
+          } else if (data.type === 'addFriend_') {
             console.log('addFriend data', data);
             {data.request.map((user) => {
               setUsers((prevUsers) => 
@@ -103,6 +114,15 @@ const FindFriends = (params) => {
 
 
 
+      const test = () => {
+        if (socketo && socketo.readyState === WebSocket.OPEN) {
+          console.log('test clicked!')
+          socketo.send(JSON.stringify({type: 'test', userId: user.id}));
+        }
+      }
+
+
+
       return (
         <div className="user-list baseCont">
           {dialog ? (
@@ -140,6 +160,7 @@ const FindFriends = (params) => {
               />
             ))}
           </div>
+          <button onClick={test}>Test</button>
         </div>
       );
 }

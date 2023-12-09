@@ -8,32 +8,26 @@ import ChatWithUser from './ChatWithUser.js';
 import axios from 'axios';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { setMessages } from '../features/messages/messagesSlice.js';
+import { setMessages, addMessage, removeMessage } from '../features/messages/messagesSlice.js';
 import { setUser, addUser, removeUser } from '../features/messages/usersSlice.js';
 
 
 const AllUsers = (params) => {
 
-    // const [users, setUsers] = useState([])
     const [socket, setSocket] = useState([])
     const [incomingRequest, setIncomingRequest] = useState([])
-    // const [selectedUser, setSelectedUser] = useState(null);
-    // const [conversation, setConversation] = useState([]);
-    // const [friend, setFriend] = useState(null)
-    const conv_name = 1
-
+    const [lastMess, setLastMess] = useState([]);
+    const conv_name = 13
 
     const navigate = useNavigate();
-    const { user } = useUser();
+    const { user, setSsockTest } = useUser();
 
     const dispatch = useDispatch();
     const allMessages = useSelector((state) => state.messages);
     const users = useSelector((state) => state.users);
-    console.log('users before', users)
-    // setUsers(usersList)
+
 
       useEffect(() => {
-        console.log('allMessages', allMessages)
 
         { allMessages.length === 0 &&
           axios
@@ -44,7 +38,7 @@ const AllUsers = (params) => {
             })
             .then((response) => {
               dispatch(setMessages(response.data.messages));
-              console.log('response', response.data.messages)
+              // console.log('response', response.data.messages)
             })
             .catch((error) => {
               console.log('Error messageList', error)
@@ -73,15 +67,49 @@ const AllUsers = (params) => {
             })
             .then((response) => {
               dispatch(setUser(response.data.user_data));
-              console.log('users after', users)
-              console.log('friends', response.data.user_data)
             })
             .catch((error) => {
               console.log('Error friendsList', error)
-              // navigate('/login')
             })
 
       }
+
+        
+      useEffect(() => {
+        const wsConv = new WebSocket(`${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&token=${user.token}`);
+
+        wsConv.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log('MESSAGE', message)
+            if (message.type === 'received_message') {
+
+              console.log('RECEIVED_NEW_MESSAGE', message)
+
+              // setLastMess(message)
+
+              dispatch(addMessage({
+                id: message.id,
+                content: message.content,
+                username: message.username,
+                user_id: message.user_id,
+                unread: message.unread,
+                photo: message.photo,
+                conversation_id: message.conversation_id,
+                timestamp: message.timestamp,
+              }));
+
+            } else {
+              console.log('ELSE @@@@@@')
+            }
+          }
+
+          return () => {
+            if (wsConv) {
+              wsConv.close();
+            } 
+          };
+
+      }, [])
 
 
       useEffect(() => {
@@ -90,12 +118,14 @@ const AllUsers = (params) => {
           const ws = new WebSocket(`${wsIP}/ws/AllUsers/${conv_name}/?userId=${user.id}&token=${user.token}`);
           setSocket(ws)
 
-          console.log('getAllUsers', ws)
+          // console.log('getAllUsers', ws)
 
-        checkIncomeFriendRequest()
+        // checkIncomeFriendRequest()
 
         ws.onmessage = (event) => {
           const data = JSON.parse(event.data);
+
+          console.log('ALL DATA', data);
 
           if (data.type === 'allUsers') {
 
@@ -111,10 +141,10 @@ const AllUsers = (params) => {
             // setUsers(data.users)
             setIncomingRequest(data.incomingFriendRequest)
 
-          } else if (data.type === 'addFriend') {
+          } else if (data.type === 'addFriend_') {
 
             console.log('addFriend data', data);
-
+          
           } else if (data.type === 'checkFriendRequest') { 
 
             console.log('checkFriendRequest data', data);
@@ -154,12 +184,12 @@ const AllUsers = (params) => {
 
 
 
-      const checkIncomeFriendRequest = () => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          console.log('friendRequest', 'socket OPEN')
-          socket.send(JSON.stringify({type: 'checkFriendRequest', userId: user.id}));
-        }
-      };
+      // const checkIncomeFriendRequest = () => {
+      //   if (socket && socket.readyState === WebSocket.OPEN) {
+      //     console.log('friendRequest', 'socket OPEN')
+      //     socket.send(JSON.stringify({type: 'checkFriendRequest', userId: user.id}));
+      //   }
+      // };
 
 
 
@@ -244,6 +274,7 @@ const AllUsers = (params) => {
             {users.map((user) => (
               <ChatWithUser 
                 user={user}
+                lastMess={lastMess}
               />
             ))}
           </div>

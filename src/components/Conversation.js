@@ -6,46 +6,41 @@ import ConfirmationDialog from './ConfirmationDialog.js';
 import { useUser } from '../context/userContext.js';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { addMessage, removeMessage } from '../features/messages/messagesSlice.js';
-import { lastMessage } from '../features/messages/usersSlice.js';
+import { addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
 
 const Conversation = ( props ) => {
 
   // Reseived props:
   const location = useLocation()
-  console.log('props', location.state)
-
   const receiver = location.state;
-  console.log('receiver', receiver.conv)
+  // const socket_ = location.state;
   const conv_name = 1
 
   // User data from the useContext.js
   const { user } = useUser();
-  console.log('user', user)
 
   const dispatch = useDispatch();
   const allMessages = useSelector((state) => state.messages);
   const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
-  console.log('allMessages', allMessages)
-  console.log('messages', messages)
+  const receiverMessages = messages.filter((message) => message.user_id === receiver.id);
 
   const [conversation, setConversation] = useState([]);
   const [newMessage, setNewMessage] = useState([])
   const [socket, setSocket] = useState([])
-  // const [messages, setMessages_] = useState([])
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [dialog, setDialog] = useState(false)
   const [delQuestion, setDelQuestion] = useState(false)
+  const online = true
+
 
   const navigate = useNavigate();
   // const to make a new message been on the bottom of the chat
   const chatContainerRef = useRef(null);
 
-  const ws = new WebSocket(`${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&receiverId=${receiver.id}&token=${user.token}`);
-  const wsu = new WebSocket(`${wsIP}/ws/AllUsers/${conv_name}/?userId=${user.id}&token=${user.token}`);
+  const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}&token=${user.token}&receiverId${receiver.id}`);
 
   // Show the bottom message with open the chat;
   // chatContainerRef is a var of useRef;
@@ -61,10 +56,13 @@ const Conversation = ( props ) => {
   //   // console.log('window.scrollTo', chatContainerRef.current.scrollHeight)
   // }, [])
 
-  useEffect(() => {
-    window.scrollTo({ top: chatContainerRef.current.scrollHeight})
-  })
 
+  useEffect(() => {
+      ws.onopen = () => {
+        ws.send(JSON.stringify({type: 'on_page', userId: user.id, chatId: receiver.conv}))
+      };
+
+  },[ws, user.username])
 
   useEffect(() => {
 
@@ -77,11 +75,31 @@ const Conversation = ( props ) => {
         dispatch(removeMessage(message.id));
       } else if ( message.type === 'resend_message' ) {
         console.log('resend_message', message.id);
+      } if ( message.type === 'chatroom_message_read' ){
+        console.log('unread @@@@@@@', message);
+        dispatch(addMessage({
+          id: message.id,
+          content: message.content,
+          username: message.username,
+          user_id: message.user_id,
+          unread: false,
+          photo: message.photo,
+          conversation_id: message.conversation_id,
+          timestamp: message.timestamp,
+        }));
+      } if ( message.type === 'on_page_response' ){
+        console.log('on_page from server @@@@@@@', message)
+        if ( message.userId === receiver.id ){
+          const myMessages = allMessages.filter((message) => message.user_id === user.id);
+          const markAsRead = myMessages.filter((message) => message.unread === true)
+          console.log('markAsRead @@@@@@@', markAsRead)
+          dispatch(markMessagesAsRead(markAsRead))
+          // const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
+          console.log('updated messages @@@@@@@', myMessages)
+        }
       }
       else {
         console.log('received new message', message);
-        setHasScrolled(false) // Get you to the bottom of the page if is incoming data from the server
-
         dispatch(addMessage({
           id: message.id,
           content: message.content,
@@ -90,17 +108,9 @@ const Conversation = ( props ) => {
           unread: message.unread,
           photo: message.photo,
           conversation_id: message.conversation_id,
+          timestamp: message.timestamp,
         }));
-
-        dispatch(lastMessage({ 
-          user_id: receiver.id, 
-          last_mess: {
-            content: message.content,
-            timestamp: '10',
-            unread: message.unread,
-          },
-        }));
-
+        setHasScrolled(false) // Get you to the bottom of the page if is incoming data from the server
       }
     }
 
@@ -115,14 +125,21 @@ const Conversation = ( props ) => {
 
   }, []);
 
-  const sendMessage = () => {
 
+  const checkRed = (mess) => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({type: 'check_red', message: mess}))
+    }
+  }
+
+  const sendMessage = () => {
+    console.log('sendMessage ssock', socket);
     if (socket && socket.readyState === WebSocket.OPEN) {
       if (newMessage) {
         // dispatch(addMessage(newMessage));
-        console.log('sendMessage', newMessage);
-        console.log('sendMessage data', socket);
-        socket.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv }));
+        console.log('sendMessage', newMessage, receiver.conv);
+        // console.log('sendMessage data', socket);
+        socket.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv, receiverId: receiver.id }));
         // wsu.send(JSON.stringify({type: 'new_message_count', count: 1 }));
         setNewMessage('');
         // set up the sent message on the bottom
@@ -132,6 +149,7 @@ const Conversation = ( props ) => {
 
   };
 
+console.log('messages After', messages)
 
   const handleChange = (e) => {
     setNewMessage(e.target.value);

@@ -8,8 +8,17 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
 
   const [user, setUser] = useState(null);
+  const [wsPlus, setWsPlus] = useState(null);
   const [accesToken, setAccesToken] = useState(null);
   const userId = Cookies.get('userId')
+
+  const [ ssock, setSsock ] = useState(null)
+
+  const setSsockTest = async(ws) => {
+    setSsock(ws)
+    console.log('setSsockTest', ws)
+    // return ws
+  }
 
   const login = async(postData) => {
     const response = await axios.post(`${serverIP}/auth/login/`, postData,)
@@ -20,25 +29,6 @@ export function UserProvider({ children }) {
       return response
     }
   }
-
-  // useEffect(() => {
-  //   userData()
-  // }, [])
-
-  // Simulate fetching user data from the server
-  // const userData = () => {
-  //   const postData = { userId };
-  //       axios.post(`${serverIP}/auth/accessToken/`, postData,)
-  //       .then((response) => {
-  //           console.log('response.data', response.data);
-  //           // setAccesToken(response.data.AccesToken)
-  //           setUser(response.data.user)
-  //       })
-  //       .catch ((error) => {
-  //          console.error('Error posting data:', error);
-  //          // setError('Error posting data')
-  //       });
-  // }
 
   const userData = (userId) => {
 
@@ -60,6 +50,8 @@ return (
             login,
             user,
             userData,
+            setSsockTest,
+            ssock,
         }}>
       {children}
     </UserContext.Provider>
