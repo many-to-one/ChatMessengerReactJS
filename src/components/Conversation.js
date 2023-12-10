@@ -1,3 +1,23 @@
+// Description:
+
+// When the user (1 or 2) enter to the page, we send to the server the message with type: 'on_page'.
+// And receive the information that the user with his id is on the page.
+// Actually we will have only one id if there is no user_2 and all our sent messages will be unread.
+// But when the user_2 will enter to the page, we update all unread messages to read;
+
+// This is the code logic:
+
+// The user_1 send the message with the sendMessage() function;
+
+// In onmessage method (else) the user_1 received the response from server,
+// where the message is unread by default. When we add this message to the reduxe store;
+
+// If user_2 enter to the page, we will get 'on_page_response' again with his id
+// We have the condition: if ( message.userId === receiver.id ) 
+// '''in this case message is a response, not a literal message, so it is only a user.id, not message.userId''' 
+// So if this condition is true we filtering all unread messages in reduxe store of user_1 and update them to read;
+
+
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { wsIP, serverIP } from '../config.js';
@@ -13,7 +33,6 @@ const Conversation = ( props ) => {
   // Reseived props:
   const location = useLocation()
   const receiver = location.state;
-  // const socket_ = location.state;
   const conv_name = 1
 
   // User data from the useContext.js
@@ -22,7 +41,6 @@ const Conversation = ( props ) => {
   const dispatch = useDispatch();
   const allMessages = useSelector((state) => state.messages);
   const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
-  const receiverMessages = messages.filter((message) => message.user_id === receiver.id);
 
   const [conversation, setConversation] = useState([]);
   const [newMessage, setNewMessage] = useState([])
@@ -33,10 +51,9 @@ const Conversation = ( props ) => {
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [dialog, setDialog] = useState(false)
   const [delQuestion, setDelQuestion] = useState(false)
-  const online = true
-
 
   const navigate = useNavigate();
+
   // const to make a new message been on the bottom of the chat
   const chatContainerRef = useRef(null);
 
@@ -65,40 +82,26 @@ const Conversation = ( props ) => {
   },[ws, user.username])
 
   useEffect(() => {
-
+    console.log('messages store', messages, receiver.conv);
     // message logic
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log('message', message);
       if (message.type === 'message_deleted') {
         console.log('message_deleted', message.id);
         dispatch(removeMessage(message.id));
       } else if ( message.type === 'resend_message' ) {
         console.log('resend_message', message.id);
-      } if ( message.type === 'chatroom_message_read' ){
-        console.log('unread @@@@@@@', message);
-        dispatch(addMessage({
-          id: message.id,
-          content: message.content,
-          username: message.username,
-          user_id: message.user_id,
-          unread: false,
-          photo: message.photo,
-          conversation_id: message.conversation_id,
-          timestamp: message.timestamp,
-        }));
       } if ( message.type === 'on_page_response' ){
-        console.log('on_page from server @@@@@@@', message)
+        console.log('on_page from server @@@@@@@', message.userId, receiver.id)
         if ( message.userId === receiver.id ){
           const myMessages = allMessages.filter((message) => message.user_id === user.id);
-          const markAsRead = myMessages.filter((message) => message.unread === true)
-          console.log('markAsRead @@@@@@@', markAsRead)
-          dispatch(markMessagesAsRead(markAsRead))
+          const unreadMessages = myMessages.filter((message) => message.unread === true)
+          console.log('markAsRead @@@@@@@', unreadMessages)
+          dispatch(markMessagesAsRead(unreadMessages))
           // const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
           console.log('updated messages @@@@@@@', myMessages)
         }
-      }
-      else {
+      } else {
         console.log('received new message', message);
         dispatch(addMessage({
           id: message.id,
@@ -126,11 +129,11 @@ const Conversation = ( props ) => {
   }, []);
 
 
-  const checkRed = (mess) => {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({type: 'check_red', message: mess}))
-    }
-  }
+  // const checkRed = (mess) => {
+  //   if (socket && socket.readyState === WebSocket.OPEN) {
+  //     socket.send(JSON.stringify({type: 'check_red', message: mess}))
+  //   }
+  // }
 
   const sendMessage = () => {
     console.log('sendMessage ssock', socket);
@@ -149,7 +152,7 @@ const Conversation = ( props ) => {
 
   };
 
-console.log('messages After', messages)
+// console.log('messages After', messages)
 
   const handleChange = (e) => {
     setNewMessage(e.target.value);

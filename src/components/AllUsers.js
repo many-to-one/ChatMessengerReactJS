@@ -66,6 +66,7 @@ const AllUsers = (params) => {
               }
             })
             .then((response) => {
+              console.log('friendsList', response)
               dispatch(setUser(response.data.user_data));
             })
             .catch((error) => {
@@ -75,41 +76,41 @@ const AllUsers = (params) => {
       }
 
         
-      useEffect(() => {
-        const wsConv = new WebSocket(`${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&token=${user.token}`);
+      // useEffect(() => {
+      //   const wsConv = new WebSocket(`${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&token=${user.token}`);
 
-        wsConv.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            console.log('MESSAGE', message)
-            if (message.type === 'received_message') {
+      //   wsConv.onmessage = (event) => {
+      //       const message = JSON.parse(event.data);
+      //       console.log('MESSAGE', message)
+      //       if (message.type === 'received_message') {
 
-              console.log('RECEIVED_NEW_MESSAGE', message)
+      //         console.log('RECEIVED_NEW_MESSAGE', message)
 
-              // setLastMess(message)
+      //         // setLastMess(message)
 
-              dispatch(addMessage({
-                id: message.id,
-                content: message.content,
-                username: message.username,
-                user_id: message.user_id,
-                unread: message.unread,
-                photo: message.photo,
-                conversation_id: message.conversation_id,
-                timestamp: message.timestamp,
-              }));
+      //         dispatch(addMessage({
+      //           id: message.id,
+      //           content: message.content,
+      //           username: message.username,
+      //           user_id: message.user_id,
+      //           unread: message.unread,
+      //           photo: message.photo,
+      //           conversation_id: message.conversation_id,
+      //           timestamp: message.timestamp,
+      //         }));
 
-            } else {
-              console.log('ELSE @@@@@@')
-            }
-          }
+      //       } else {
+      //         console.log('ELSE @@@@@@')
+      //       }
+      //     }
 
-          return () => {
-            if (wsConv) {
-              wsConv.close();
-            } 
-          };
+      //     return () => {
+      //       if (wsConv) {
+      //         wsConv.close();
+      //       } 
+      //     };
 
-      }, [])
+      // }, [])
 
 
       useEffect(() => {
@@ -271,9 +272,9 @@ const AllUsers = (params) => {
           </div>
           <hr></hr>
 
-            {users.map((user) => (
+            {users.map((user_) => (
               <ChatWithUser 
-                user={user}
+                user_={user_}
                 lastMess={lastMess}
               />
             ))}
