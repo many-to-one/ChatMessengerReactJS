@@ -19,17 +19,6 @@ const messagesSlice = createSlice({
           }
         });
       },
-      // markMessagesAsRead: (state, action) => {
-      //   const { userId, messages } = action.payload;
-        
-      //   messages.forEach((message) => {
-      //     const foundMessage = state.find((m) => m.id === message.id);
-      
-      //     if (foundMessage && foundMessage.user_id === userId) {
-      //       foundMessage.unread = false;
-      //     }
-      //   });
-      // },
       removeMessage: (state, action) => {
         return state.filter((message) => message.id !== action.payload);
       },

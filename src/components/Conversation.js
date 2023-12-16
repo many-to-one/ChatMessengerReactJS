@@ -41,6 +41,9 @@ const Conversation = ( props ) => {
   const dispatch = useDispatch();
   const allMessages = useSelector((state) => state.messages);
   const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
+  const lastMessage = messages[messages.length - 1];
+
+  const write = useSelector((state) => state.writing)
 
   const [conversation, setConversation] = useState([]);
   const [newMessage, setNewMessage] = useState([])
@@ -51,6 +54,10 @@ const Conversation = ( props ) => {
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [dialog, setDialog] = useState(false)
   const [delQuestion, setDelQuestion] = useState(false)
+
+  const [writing, setWriting] = useState('')
+  const [active, setActive] = useState('')
+  const [letter, setLetter] = useState('')
 
   const navigate = useNavigate();
 
@@ -73,6 +80,9 @@ const Conversation = ( props ) => {
   //   // console.log('window.scrollTo', chatContainerRef.current.scrollHeight)
   // }, [])
 
+  const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+  };
 
   useEffect(() => {
       ws.onopen = () => {
@@ -81,7 +91,29 @@ const Conversation = ( props ) => {
 
   },[ws, user.username])
 
+
   useEffect(() => {
+
+    // const sleep = (milliseconds) => {
+    //   return new Promise(resolve => setTimeout(resolve, milliseconds));
+    // };
+
+    // const writingFunc = async () => {
+    //   setWriting(true)
+    //   await sleep(1000)
+    //   setWriting(false)
+    // }
+
+    const writingFunc = () => {
+      // Set the state to true
+      setWriting(true);
+  
+      // After 1 second, set the state back to false
+      setTimeout(() => {
+        setWriting(false);
+      }, 2000);
+    };
+
     console.log('messages store', messages, receiver.conv);
     // message logic
     ws.onmessage = (event) => {
@@ -92,16 +124,37 @@ const Conversation = ( props ) => {
       } else if ( message.type === 'resend_message' ) {
         console.log('resend_message', message.id);
       } if ( message.type === 'on_page_response' ){
+        // writingFunc()
         console.log('on_page from server @@@@@@@', message.userId, receiver.id)
         if ( message.userId === receiver.id ){
-          const myMessages = allMessages.filter((message) => message.user_id === user.id);
+          console.log('!!!!!', write)
+          if (write === true) {
+            setWriting('writting...')
+          }
+          // In this condition the messege will be read for the sender if he is in connversation
+          // at the moment when the reseiver enter to the conversation
+          const myMessages = messages.filter((message) => message.user_id === user.id);
           const unreadMessages = myMessages.filter((message) => message.unread === true)
-          console.log('markAsRead @@@@@@@', unreadMessages)
           dispatch(markMessagesAsRead(unreadMessages))
-          // const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
-          console.log('updated messages @@@@@@@', myMessages)
+          console.log('piszę... @@@@@@@', message.userId, receiver.id) 
+          setLetter('active')
+          setActive('pisze...')
+          // setWriting(false)
+          // if (!letter) {
+          //   setTimeout(() => {
+          //     setWriting(true);
+          //     console.log('piszę... @@@@@@@')
+          //   }, 2000);
+          // }
+          // writingFunc()
+        } if ( lastMessage.user_id !== message.userId ) {
+          // In this condition the message will be read for sender and receiver if sender is not in the conversation
+          // and receiver read it.
+          console.log('lastMessage.user_id !== message.userId @@@@@@@', lastMessage.user_id, message.userId) 
+          dispatch(markMessagesAsRead(lastMessage))
         }
-      } else {
+      } 
+      else {
         console.log('received new message', message);
         dispatch(addMessage({
           id: message.id,
@@ -118,7 +171,6 @@ const Conversation = ( props ) => {
     }
 
     setSocket(ws);
-    // setSocketU(wsu);
 
     return () => {
       if (ws) {
@@ -127,13 +179,6 @@ const Conversation = ( props ) => {
     };
 
   }, []);
-
-
-  // const checkRed = (mess) => {
-  //   if (socket && socket.readyState === WebSocket.OPEN) {
-  //     socket.send(JSON.stringify({type: 'check_red', message: mess}))
-  //   }
-  // }
 
   const sendMessage = () => {
     console.log('sendMessage ssock', socket);
@@ -156,6 +201,7 @@ const Conversation = ( props ) => {
 
   const handleChange = (e) => {
     setNewMessage(e.target.value);
+    console.log('writing...')
   };
 
   const deleteMess = (id) => {
@@ -253,6 +299,13 @@ const delQuest = () => {
               :
               <img src={serverIP + 'media/profile_photos/profile.png'} alt={receiver.username} className="user-photo" />
             }
+            {/* <div>
+            {write ? (
+                    <p>{writing}</p>
+                  ) : (
+                    <p>000</p>
+                  )}
+            </div> */}
           </div>
           {showConfirmation ?
             <ConfirmationDialog

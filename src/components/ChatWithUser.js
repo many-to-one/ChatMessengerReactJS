@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { serverIP, wsIP } from '../config'
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { setMessages, addMessage, removeMessage } from '../features/messages/messagesSlice.js';
+import { setMessages, addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
+// import { setWritingStatus } from '../features/messages/writingSlice.js';
 
 import { useUser } from '../context/userContext.js';
 
@@ -11,27 +12,42 @@ import moment from 'moment';
 const ChatWithUser = ({ user_ }) => {
 
   const { user } = useUser();
-  console.log('ChatWithUser - main user', user)
-  console.log('ChatWithUser', user_.conv)
   const dispatch = useDispatch();
+  const write = useSelector((state) => state.writing)
   const allMessages = useSelector((state) => state.messages);
   const userLastMessages = allMessages.filter((message) => message.conversation_id === user_.conv);
   const lastMessage = userLastMessages[userLastMessages.length - 1];
-  const unreadMessages = allMessages.filter((message) => message.unread === true);
+  const receiverMessages = userLastMessages.filter((message) => message.user_id === user_.id)
+  const myMessages = userLastMessages.filter((message) => message.user_id !== user_.id)
+  const unreadMessages = receiverMessages.filter((message) => message.unread === true);
+  const myUnreadMessages = myMessages.filter((message) => message.unread === true);
 
+  const [writing, setWriting] = useState(false)
 
 
   useEffect(() => {
     const wsConv = new WebSocket(`${wsIP}/ws/conversation/${user_.conv}/?userId=${user_.id}`); //&token=${user.token}
 
+    const sleep = (milliseconds) => {
+      return new Promise(resolve => setTimeout(resolve, milliseconds));
+    };
+
+    const writingFunc = async () => {
+      setWriting(true)
+      // dispatch(setWritingStatus(true));
+      // console.log('//// +++++', write)
+      await sleep(2000)
+      setWriting(false)
+      // dispatch(setWritingStatus(false));
+      // console.log('////-----', write)
+    }
+
     wsConv.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        console.log('MESSAGE', message)
+
         if (message.type === 'received_message') {
 
           console.log('RECEIVED_NEW_MESSAGE', message)
-
-          // setLastMess(message)
 
           dispatch(addMessage({
             id: message.id,
@@ -44,9 +60,14 @@ const ChatWithUser = ({ user_ }) => {
             timestamp: message.timestamp,
           }));
 
-        } else {
-          console.log('ELSE @@@@@@')
-        }
+        } if (message.type === 'on_page_response') {
+          // console.log('////', write)
+          writingFunc() 
+          if ( user_.id !== lastMessage.user_id) {
+            console.log('condition', user_.id , lastMessage.user_id)
+            dispatch(markMessagesAsRead(myUnreadMessages))
+          }
+        } 
       }
 
       return () => {
@@ -60,15 +81,12 @@ const ChatWithUser = ({ user_ }) => {
 
 
 
-  let date = user_.last_mess.timestamp.slice(1, 11 )
-  console.log('lastMessage', lastMessage)
-  console.log('USER +', user_)
-  console.log('DATE', user_.last_mess.timestamp)
-  console.log('DATE +', date)
-  console.log('unreadMessages', unreadMessages)
-  if ( user_.last_mess.timestamp.slice(1, 11 ) === moment().format().slice(0, 10) ) {
+  // let date = user_.last_mess.timestamp.slice(1, 11 )
+  let date = lastMessage.timestamp.slice(0, 10 )
+
+  if ( lastMessage.timestamp.slice(1, 11 ) === moment().format().slice(0, 10) ) {
     date = `${lastMessage.timestamp.slice(12, 17)}`
-  } else if ( user_.last_mess.timestamp === moment().subtract(1, 'days').format('YYYY-MM-DD') ){
+  } else if ( date === moment().subtract(1, 'days').format('YYYY-MM-DD') ){
     date = `yesterday`
   }
 
@@ -80,7 +98,7 @@ const ChatWithUser = ({ user_ }) => {
         <div className='row_cont'>
           <img src={serverIP + user_.photo} alt={user_.username} className="user-photo" /> 
           <div className='count_add'>
-            <p>{user_.count}</p>
+            <p>{unreadMessages.length}</p>
           </div>
         </div>
 
@@ -91,24 +109,17 @@ const ChatWithUser = ({ user_ }) => {
 
               { lastMessage !== undefined &&
                 <div className='line_cont'>
-                { lastMessage.user_id === user_.id ?
                   <div>
-                    {lastMessage.unread ?
-                        <p> - { lastMessage.content }</p>
-                        :
-                        <p> + { lastMessage.content }</p>
-                      }
+                  {writing ? (
+                    <p>writing...</p>
+                  ) : (
+                    lastMessage.unread ? (
+                      <p> - {lastMessage.content.slice(0, 30) + '...'}</p>
+                    ) : (
+                      <p> + {lastMessage.content.slice(0, 30) + '...'}</p>
+                    )
+                  )}
                   </div>
-                  :
-                  <div>
-                    {user_.last_mess ?
-                        <p>- {user_.last_mess.content}</p>
-                        :
-                        <p>+ {user_.last_mess.content}</p>
-                      }
-                  </div>
-                }
-
                 <p className='line_date'>{date}</p>
               </div>
               }
