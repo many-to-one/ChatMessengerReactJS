@@ -36,7 +36,7 @@ const Conversation = ( props ) => {
   const conv_name = 1
 
   // User data from the useContext.js
-  const { user } = useUser();
+  const { user, ssock } = useUser();
 
   const dispatch = useDispatch();
   const allMessages = useSelector((state) => state.messages);
@@ -64,7 +64,7 @@ const Conversation = ( props ) => {
   // const to make a new message been on the bottom of the chat
   const chatContainerRef = useRef(null);
 
-  const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}&token=${user.token}&receiverId${receiver.id}`);
+  const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}`); // &token=${user.token}&receiverId${receiver.id}
 
   // Show the bottom message with open the chat;
   // chatContainerRef is a var of useRef;
@@ -84,9 +84,15 @@ const Conversation = ( props ) => {
     return new Promise(resolve => setTimeout(resolve, milliseconds));
   };
 
+
+
   useEffect(() => {
-      ws.onopen = () => {
-        ws.send(JSON.stringify({type: 'on_page', userId: user.id, chatId: receiver.conv}))
+
+    const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}`);
+
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({type: 'on_page', userId: user.id, chatId: receiver.conv}))
       };
 
   },[ws, user.username])
@@ -115,28 +121,39 @@ const Conversation = ( props ) => {
     };
 
     console.log('messages store', messages, receiver.conv);
+    console.log('ssock', ssock);
     // message logic
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'message_deleted') {
-        console.log('message_deleted', message.id);
+        // console.log('message_deleted', message.id);
         dispatch(removeMessage(message.id));
-      } else if ( message.type === 'resend_message' ) {
-        console.log('resend_message', message.id);
+      } else if ( message.type === 'resend_message_' ) {
+        console.log('resend_message_in_conv', message, user);
+        dispatch(addMessage({
+          id: message.id,
+          content: message.content,
+          username: message.username,
+          user_id: receiver.id,
+          unread: true,
+          resend: true,
+          photo: user.photo,
+          conversation_id: receiver.conv,
+          timestamp: message.timestamp,
+        }));
       } if ( message.type === 'on_page_response' ){
         // writingFunc()
-        console.log('on_page from server @@@@@@@', message.userId, receiver.id)
+        // console.log('on_page from server @@@@@@@', message.userId, receiver.id)
         if ( message.userId === receiver.id ){
-          console.log('!!!!!', write)
-          if (write === true) {
-            setWriting('writting...')
-          }
+          // if (write === true) {
+          //   setWriting('writting...')
+          // }
           // In this condition the messege will be read for the sender if he is in connversation
           // at the moment when the reseiver enter to the conversation
           const myMessages = messages.filter((message) => message.user_id === user.id);
           const unreadMessages = myMessages.filter((message) => message.unread === true)
           dispatch(markMessagesAsRead(unreadMessages))
-          console.log('piszę... @@@@@@@', message.userId, receiver.id) 
+          // console.log('piszę... @@@@@@@', message.userId, receiver.id) 
           setLetter('active')
           setActive('pisze...')
           // setWriting(false)
@@ -147,15 +164,10 @@ const Conversation = ( props ) => {
           //   }, 2000);
           // }
           // writingFunc()
-        } if ( lastMessage.user_id !== message.userId ) {
-          // In this condition the message will be read for sender and receiver if sender is not in the conversation
-          // and receiver read it.
-          console.log('lastMessage.user_id !== message.userId @@@@@@@', lastMessage.user_id, message.userId) 
-          dispatch(markMessagesAsRead(lastMessage))
-        }
+        } 
       } 
-      else {
-        console.log('received new message', message);
+      if ( message.type === 'received_message' ) {
+        // console.log('received new message', message);
         dispatch(addMessage({
           id: message.id,
           content: message.content,
@@ -166,6 +178,7 @@ const Conversation = ( props ) => {
           conversation_id: message.conversation_id,
           timestamp: message.timestamp,
         }));
+        console.log('messages after --- ', messages)
         setHasScrolled(false) // Get you to the bottom of the page if is incoming data from the server
       }
     }
@@ -194,6 +207,11 @@ const Conversation = ( props ) => {
         window.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })
       }
     }
+    // ssock.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv, receiverId: receiver.id }));
+    //     // wsu.send(JSON.stringify({type: 'new_message_count', count: 1 }));
+    //     setNewMessage('');
+    //     // set up the sent message on the bottom
+    //     window.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })
 
   };
 

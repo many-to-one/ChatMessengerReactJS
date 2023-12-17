@@ -15,7 +15,7 @@ const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCa
   useEffect(() => {
     // deb4a2ae-31af-4918-90a8-5296390629b7e2ae3f06-fe17-4b44-95df-99d034b8d773f20ca5ef-14eb-4f49-b9e7-7ca4906077ce
 
-    console.log('data', data)
+    console.log('resendMess', resendMess)
     
     if ( !user ) {
       navigate("/login")

@@ -75,43 +75,6 @@ const AllUsers = (params) => {
 
       }
 
-        
-      // useEffect(() => {
-      //   const wsConv = new WebSocket(`${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&token=${user.token}`);
-
-      //   wsConv.onmessage = (event) => {
-      //       const message = JSON.parse(event.data);
-      //       console.log('MESSAGE', message)
-      //       if (message.type === 'received_message') {
-
-      //         console.log('RECEIVED_NEW_MESSAGE', message)
-
-      //         // setLastMess(message)
-
-      //         dispatch(addMessage({
-      //           id: message.id,
-      //           content: message.content,
-      //           username: message.username,
-      //           user_id: message.user_id,
-      //           unread: message.unread,
-      //           photo: message.photo,
-      //           conversation_id: message.conversation_id,
-      //           timestamp: message.timestamp,
-      //         }));
-
-      //       } else {
-      //         console.log('ELSE @@@@@@')
-      //       }
-      //     }
-
-      //     return () => {
-      //       if (wsConv) {
-      //         wsConv.close();
-      //       } 
-      //     };
-
-      // }, [])
-
 
       useEffect(() => {
         
@@ -126,12 +89,12 @@ const AllUsers = (params) => {
         ws.onmessage = (event) => {
           const data = JSON.parse(event.data);
 
-          console.log('ALL DATA', data);
+          // console.log('ALL DATA', data);
 
           if (data.type === 'allUsers') {
 
-            console.log('allUsers', data, data.type);
-            console.log('friends_count', data.friends_count.count);
+            // console.log('allUsers', data, data.type);
+            // console.log('friends_count', data.friends_count.count);
 
             if ( users.length < data.friends_count.count ) {
               friendList()

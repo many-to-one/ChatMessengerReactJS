@@ -3,15 +3,14 @@ import { serverIP, wsIP } from '../config'
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setMessages, addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
-// import { setWritingStatus } from '../features/messages/writingSlice.js';
 
 import { useUser } from '../context/userContext.js';
 
 import moment from 'moment';
 
-const ChatWithUser = ({ user_, resendMess }) => {
+const ResendUser = ({ user_, resendMess }) => {
 
-  const { user, setSsockTest } = useUser();
+    const { user } = useUser();
   const dispatch = useDispatch();
   const write = useSelector((state) => state.writing)
   const allMessages = useSelector((state) => state.messages);
@@ -23,83 +22,41 @@ const ChatWithUser = ({ user_, resendMess }) => {
   const myUnreadMessages = myMessages.filter((message) => message.unread === true);
 
   const [writing, setWriting] = useState(false)
+  const [socket, setSocket] = useState([])
 
 
   useEffect(() => {
 
-    console.log('resendMess in ChatWithUser', resendMess)
-    const wsConv = new WebSocket(`${wsIP}/ws/conversation/${user_.conv}/?userId=${user_.id}`); 
-    // const wsConv = new WebSocket(`${wsIP}/ws/conversation`);
-    // setSsockTest(wsConv)
-
-
-    wsConv.addEventListener('open', (event) => {
-      // Send data during the initial connection
-      const data = {
-        conv: user_.conv,
-        userId: user_.id,
-      };
-    
-      wsConv.send(JSON.stringify(data));
-    });
-
-
-    const sleep = (milliseconds) => {
-      return new Promise(resolve => setTimeout(resolve, milliseconds));
-    };
-
-    const writingFunc = async () => {
-      setWriting(true)
-      // dispatch(setWritingStatus(true));
-      // console.log('//// +++++', write)
-      await sleep(2000)
-      setWriting(false)
-      // dispatch(setWritingStatus(false));
-      // console.log('////-----', write)
-    }
+    console.log('resendMess in ResendUser', resendMess, user_)
+    const wsConv = new WebSocket(`${wsIP}/ws/conversation/${user_.conv}/?userId=${user_.id}`); //&token=${user.token}
 
     wsConv.onmessage = (event) => {
         const message = JSON.parse(event.data);
+        console.log('ON_MESSAGE', message)
 
         if (message.type === 'received_message') {
 
           console.log('RECEIVED_NEW_MESSAGE', message)
 
-          dispatch(addMessage({
-            id: message.id,
-            content: message.content,
-            username: message.username,
-            user_id: message.user_id,
-            unread: message.unread,
-            photo: message.photo,
-            conversation_id: message.conversation_id,
-            timestamp: message.timestamp,
-          }));
-
         } if (message.type === 'on_page_response') {
-          // console.log('////', write)
-          writingFunc() 
-        //   if ( lastMessage ) {
-        //     if ( user_.id !== lastMessage.user_id) {
-        //       console.log('condition', user_.id , lastMessage.user_id)
-        //       dispatch(markMessagesAsRead(myUnreadMessages))
-        //     }
-        //   }
+            console.log('on_page_response', message);
         } if (message.type === 'resend_message_') {
-          console.log('resend_message_in_chatWith', message);
+          console.log('resend_message_in_ResendUser', message);
+          console.log('user_.conv_in_ResendUser', user_.conv);
           dispatch(addMessage({
             id: message.id,
             content: message.content,
             username: message.username,
             user_id: user_.id,
-            unread: true,
-            resend: true,
+            unread: false,
             photo: user_.photo,
             conversation_id: user_.conv,
             timestamp: message.timestamp,
           }));
         }
       }
+
+      setSocket(wsConv)
 
       return () => {
         if (wsConv) {
@@ -127,8 +84,13 @@ const ChatWithUser = ({ user_, resendMess }) => {
   }
 
 
+  const testIno = (user_) => {
+    console.log('testIno', user_.conv)
+    socket.send(JSON.stringify({ type: 'resend_message', message: resendMess, id: user_.conv }));
+  }
+
   return (
-    <div className="user-list-item" key={user_.id}>
+    <div className="user-list-item" key={user_.id} onClick={() => testIno(user_)}>
       <div className="user-link-in">
 
         <div className='row_cont'>
@@ -139,7 +101,6 @@ const ChatWithUser = ({ user_, resendMess }) => {
         </div>
 
         <div className='column_cont'>
-        <Link to="/conversation" state={user_} className="user-link">
             <div>
               <strong>{user_.username}</strong>
 
@@ -161,12 +122,14 @@ const ChatWithUser = ({ user_, resendMess }) => {
               }
                                                   
             </div>
-          </Link>
         </div>
       </div>
     </div>
   )
+
+  return (
+    <div>ResendUser</div>
+  )
 }
 
-export default ChatWithUser;
-
+export default ResendUser

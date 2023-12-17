@@ -6,6 +6,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import '../styles/AllUsers.css';
 import { useUser } from '../context/userContext.js';
 
+import { useDispatch, useSelector } from 'react-redux';
+import { addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
+import ChatWithUser from './ChatWithUser.js';
+import ResendUser from './ResendUser.js';
+
 const AllUsersResend = (params) => {
 
     const [users, setUsers] = useState([])
@@ -21,51 +26,88 @@ const AllUsersResend = (params) => {
 
     const { user } = useUser();
 
+    const dispatch = useDispatch();
+    const allMessages = useSelector((state) => state.messages);
+    const usersForReasend = useSelector((state) => state.users);
+
     useEffect(() => {
       if (!resendMess) {
         navigate('/');
-      }
+      } 
+
     }, [resendMess, navigate])
 
-    useEffect(() => {
+    // useEffect(() => {
 
-        // Define an Axios config object with the Authorization header.
-        const config = {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-            userId: user.id,
-          },
-        };
+    //   console.log('usersForReasend', usersForReasend)
+
+    //     // Define an Axios config object with the Authorization header.
+    //     const config = {
+    //       headers: {
+    //         Authorization: `Bearer ${user.token}`,
+    //         userId: user.id,
+    //       },
+    //     };
     
-        // Make an Axios GET request with the token in the headers.
-        axios.get(`${serverIP}/auth/users/`, config)
-          .then((response) => {
-            if(response.status === 200){
-              const fetchedUsers = response.data.users; 
-              setUsers(fetchedUsers);
-              findConvId()
-            }
-          })
-          .catch((error) => {
-            if(error.response.status === 403){
-              navigate('/login')
-            }else if (error.response.status === 404){
-              navigate('/404')
-            }
-          });
-      }, [user.token]);
+    //     // Make an Axios GET request with the token in the headers.
+    //     axios.get(`${serverIP}/auth/users/`, config)
+    //       .then((response) => {
+    //         if(response.status === 200){
+    //           const fetchedUsers = response.data.users; 
+    //           // console.log('usersForReasend', usersForReasend)
+    //           setUsers(fetchedUsers);
+    //           findConvId()
+    //         }
+    //       })
+    //       .catch((error) => {
+    //         if(error.response.status === 403){
+    //           navigate('/login')
+    //         }else if (error.response.status === 404){
+    //           navigate('/404')
+    //         }
+    //       });
+    //   }, [user.token]);
 
 
-      const findConvId = async () => {
+      const test = async () => {
         if (selectedUsers) {
           // selectedUsers.forEach((user) => {
           //   findIt(user);
           // });
-          for(const user of selectedUsers){
-            await findIt(user)
+          for(const _user of selectedUsers){
+            console.log('working')
+            initializeWebSocket(_user.conv)
           }
         }
       };
+
+
+    //   const findIt = async(user_) => {
+
+    //     // Fetch conversation data for the selected user based on userId.
+    //     axios
+    //     .post(
+    //       `${serverIP}/conversations/`,
+    //       {
+    //         user: [parseInt(user.id), user_],
+    //       },
+    //       { 
+    //         headers: {
+    //           Authorization: `Bearer ${user.token}`,
+    //         },
+    //       }
+    //     )
+    //     .then((response) => {
+    //       const conversationData = response.data.conversation;
+    //       console.log('conversationData', conversationData)
+    //       initializeWebSocket(conversationData.id)
+    //     })
+    //     .catch((error) => {
+  
+    //     });
+  
+    //   }
+
 
       const waitForOpenConnection = (socket) => {
         return new Promise((resolve, reject) => {
@@ -88,11 +130,14 @@ const AllUsersResend = (params) => {
     
       const initializeWebSocket = async (convId) => {
 
+        console.log('initializeWebSocket', convId) 
+
           const ws = new WebSocket(
-            `${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&receiverId=${convId}&token=${user.token}`
+            // `${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&receiverId=${convId}&token=${user.token}`
+            `${wsIP}/ws/conversation/${convId}/?userId=${user.id}`
           );
           setSocket(ws);
-          if (ws.readyState !== ws.OPEN) {
+          if (ws.readyState !== ws.OPEN) { 
             try {
                 await waitForOpenConnection(ws)
                 ws.send(JSON.stringify({ type: 'resend_message', message: resendMess, id: convId }));
@@ -106,45 +151,32 @@ const AllUsersResend = (params) => {
         // message logic
         ws.onmessage = (event) => {
           const message = JSON.parse(event.data);
-          console.log('message', message);
           if (message.type === 'message_deleted') {
             console.log('message_deleted', message.id);
-          } else {
-            console.log('message else', message)
+          } 
+          if (message.type === 'resend_message_') {
+            console.log('resend_message_', message);
+            dispatch(addMessage({
+              id: message.id,
+              content: message.content,
+              username: message.username,
+              user_id: message.user_id,
+              unread: message.unread,
+              photo: message.photo,
+              conversation_id: convId,
+              resend: true,
+              timestamp: message.timestamp,
+            }));
           }
+          // console.log('resend store, convId', allMessages, convId)
         }
 
       };
 
-
-    const findIt = async(user_) => {
-
-      // Fetch conversation data for the selected user based on userId.
-      axios
-      .post(
-        `${serverIP}/conversations/`,
-        {
-          user: [parseInt(user.id), user_],
-        },
-        { 
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        }
-      )
-      .then((response) => {
-        const conversationData = response.data.conversation;
-        initializeWebSocket(conversationData.id)
-      })
-      .catch((error) => {
-
-      });
-
-    }
-
     
       const handleUserSelect = (userId) => {
-
+        console.log('handleUserSelect', userId.conv)
+        // initializeWebSocket(userId.conv)
         setSelectedUsers((prevSelectedUsers) => {
           if (prevSelectedUsers.includes(userId)) {
             // User is already selected, so remove them
@@ -162,20 +194,27 @@ const AllUsersResend = (params) => {
       return (
         <div className="user-list baseCont">
           <div className="user-list-items">
-            {users.map((user) => (
-              <div className="user-list-item" key={user.id} onClick={() =>  handleUserSelect(user.id)}>
-                <div className="user-link-in">
-                  {user.photo ? (
-                    <img src={serverIP + user.photo} alt={user.username} className="user-photo" />
-                  ) : (
-                    <img src={serverIP + 'media/profile_photos/default.png'} alt={user.username} className="user-photo" />
-                  )}
-                  {user.username}
-                </div>
+            {usersForReasend.map((user_) => (
+              <div >
+                <ResendUser 
+                  user_={user_}
+                  resendMess={resendMess}
+                />
               </div>
+  
+              // <div className="user-list-item" key={user.id} onClick={() =>  handleUserSelect(user)}>
+              //   <div className="user-link-in">
+              //     {user.photo ? (
+              //       <img src={serverIP + user.photo} alt={user.username} className="user-photo" />
+              //     ) : (
+              //       <img src={serverIP + 'media/profile_photos/default.png'} alt={user.username} className="user-photo" />
+              //     )}
+              //     {user.username}
+              //   </div>
+              // </div>
             ))}
           </div>
-          <button onClick={() => findConvId()}>Send</button>
+          <button onClick={() => test()}>Send</button>
         </div>
       );
   
