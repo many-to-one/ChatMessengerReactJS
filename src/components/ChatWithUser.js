@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { serverIP, wsIP } from '../config'
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { setMessages, addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
+import { setMessages, addMessage, removeMessage, markMessagesAsRead, unreadUserMessages } from '../features/messages/messagesSlice.js';
 // import { setWritingStatus } from '../features/messages/writingSlice.js';
 
 import { useUser } from '../context/userContext.js';
@@ -23,26 +23,19 @@ const ChatWithUser = ({ user_, resendMess }) => {
   const myUnreadMessages = myMessages.filter((message) => message.unread === true);
 
   const [writing, setWriting] = useState(false)
-
+  const [messCount, setMessCount] = useState(unreadMessages.length)
 
   useEffect(() => {
 
-    console.log('resendMess in ChatWithUser', resendMess)
+    // console.log('userLastMessages in ChatWithUser', userLastMessages)
+    console.log('lastMessage in ChatWithUser', lastMessage, unreadMessages, user_.conv)
+    setMessCount(unreadMessages.length)
+
     const wsConv = new WebSocket(`${wsIP}/ws/conversation/${user_.conv}/?userId=${user_.id}`); 
-    // const wsConv = new WebSocket(`${wsIP}/ws/conversation`);
-    // setSsockTest(wsConv)
 
-
-    wsConv.addEventListener('open', (event) => {
-      // Send data during the initial connection
-      const data = {
-        conv: user_.conv,
-        userId: user_.id,
+    wsConv.onopen = () => {
+      wsConv.send(JSON.stringify({type: 'on_chatUser', userId: user.id, receiverId: user_.id, chatId: user_.conv}))
       };
-    
-      wsConv.send(JSON.stringify(data));
-    });
-
 
     const sleep = (milliseconds) => {
       return new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -76,30 +69,48 @@ const ChatWithUser = ({ user_, resendMess }) => {
             timestamp: message.timestamp,
           }));
 
+          console.log('messCount', messCount)
+          setMessCount(prevMessCount => prevMessCount + 1);
+          // console.log('received_message unread', message.unread_mess)
+          // console.log('userLastMessages', userLastMessages)
+
+          // if ( lastMessage.user_id === user_.id ) {
+          //   dispatch(markMessagesAsRead(unreadMessages))
+          // }
+
         } if (message.type === 'on_page_response') {
-          // console.log('////', write)
+          console.log('users', user.id, user_.id, message.user_id)
+
           writingFunc() 
-        //   if ( lastMessage ) {
-        //     if ( user_.id !== lastMessage.user_id) {
-        //       console.log('condition', user_.id , lastMessage.user_id)
-        //       dispatch(markMessagesAsRead(myUnreadMessages))
-        //     }
-        //   }
+
+          // dispatch(markMessagesAsRead(unreadMessages))
+          
+          if ( lastMessage.user_id === user.id ) {
+            console.log('lastMessage.user_id', lastMessage.user_id)
+            dispatch(markMessagesAsRead(unreadMessages))
+
+          }
+        
         } if (message.type === 'resend_message_') {
           console.log('resend_message_in_chatWith', message);
           dispatch(addMessage({
             id: message.id,
             content: message.content,
             username: message.username,
-            user_id: user_.id,
+            user_id: message.user_id,
             unread: true,
             resend: true,
             photo: user_.photo,
             conversation_id: user_.conv,
             timestamp: message.timestamp,
           }));
+        } if (message.type === 'on_chatUser_response') {
+          console.log('on_chatUser_response', message.receiverId, message.unreadMess)
+          if ( message.receiverId !== user.id ){
+            setMessCount(message.unreadMess)
+          }
         }
-      }
+      } 
 
       return () => {
         if (wsConv) {
@@ -134,7 +145,7 @@ const ChatWithUser = ({ user_, resendMess }) => {
         <div className='row_cont'>
           <img src={serverIP + user_.photo} alt={user_.username} className="user-photo" /> 
           <div className='count_add'>
-            <p>{unreadMessages.length}</p>
+            <p>{messCount}</p>
           </div>
         </div>
 
@@ -149,10 +160,14 @@ const ChatWithUser = ({ user_, resendMess }) => {
                   {writing ? (
                     <p>writing...</p>
                   ) : (
-                    lastMessage.unread ? (
-                      <p> - {lastMessage.content.slice(0, 30) + '...'}</p>
-                    ) : (
-                      <p> + {lastMessage.content.slice(0, 30) + '...'}</p>
+                    lastMessage.user_id === user.id ? (
+                      lastMessage.unread ? (
+                        <p> - {lastMessage.content.slice(0, 30) + '...'}</p>
+                      ) : (
+                        <p> + {lastMessage.content.slice(0, 30) + '...'}</p>
+                      )
+                    ):(
+                      <p>{lastMessage.content.slice(0, 30) + '...'}</p>
                     )
                   )}
                   </div>

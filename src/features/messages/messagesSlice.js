@@ -19,6 +19,15 @@ const messagesSlice = createSlice({
           }
         });
       },
+      unreadUserMessages: (state, action) => {
+        let count = 0
+        state.forEach((message) => {
+          if (message.unread === true) {
+            count += 1;
+          }
+        });
+        return count;
+      },
       removeMessage: (state, action) => {
         return state.filter((message) => message.id !== action.payload);
       },
@@ -28,5 +37,5 @@ const messagesSlice = createSlice({
     },
   });
   
-  export const { setConvId, setMessages, addMessage, markMessagesAsRead, removeMessage, lastMessage, clearMessages } = messagesSlice.actions;
+  export const { setConvId, setMessages, addMessage, markMessagesAsRead, removeMessage, lastMessage, clearMessages, unreadUserMessages } = messagesSlice.actions;
   export default messagesSlice.reducer;

@@ -43,6 +43,9 @@ const Conversation = ( props ) => {
   const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
   const lastMessage = messages[messages.length - 1];
 
+  const receiverMessages_ = messages.filter((message) => message.user_id === receiver.id);
+  const unreadMessages_ = receiverMessages_.filter((message) => message.unread === true)
+
   const write = useSelector((state) => state.writing)
 
   const [conversation, setConversation] = useState([]);
@@ -88,11 +91,14 @@ const Conversation = ( props ) => {
 
   useEffect(() => {
 
-    const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}`);
+    // const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}`);
 
+    // console.log('receiverMessages_', receiverMessages_)
+    console.log('unreadMessages_', unreadMessages_)
+    // dispatch(markMessagesAsRead(unreadMessages_))
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({type: 'on_page', userId: user.id, chatId: receiver.conv}))
+      ws.send(JSON.stringify({type: 'on_page', userId: user.id, receiverId: receiver.id, chatId: receiver.conv}))
       };
 
   },[ws, user.username])
@@ -120,8 +126,18 @@ const Conversation = ( props ) => {
       }, 2000);
     };
 
-    console.log('messages store', messages, receiver.conv);
-    console.log('ssock', ssock);
+    // console.log('messages store', messages, receiver.conv);
+    // console.log('ssock', ssock);
+
+    if ( lastMessage.user_id === receiver.id ) {
+      // console.log('inConv_@@@@@', lastMessage.user_id, receiver.id, receiver.conv )
+      const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
+      const receiverMessages_ = messages.filter((message) => message.user_id === receiver.id);
+      const unreadMessages_ = receiverMessages_.filter((message) => message.unread === true)
+      // console.log('receiverMessages_', receiverMessages_)
+      // console.log('unreadMessages_', unreadMessages_)
+      
+    }
     // message logic
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
@@ -143,19 +159,27 @@ const Conversation = ( props ) => {
         }));
       } if ( message.type === 'on_page_response' ){
         // writingFunc()
-        // console.log('on_page from server @@@@@@@', message.userId, receiver.id)
+        console.log('on_page from server @@@@@@@',user.id, receiver.id, message.userId, message)
+        console.log('lastMessage', lastMessage)
+        // const myMessages = messages.filter((message) => message.user_id === user.id);
+        //   const unreadMessages = myMessages.filter((message) => message.unread === true)
+        //   dispatch(markMessagesAsRead(unreadMessages))
+        // console.log('markMessagesAsRead @@@@@@@@@@@', message.userId, receiver.id)
         if ( message.userId === receiver.id ){
+          console.log('message.userId === receiver.id @@@@@@@', message.userId, receiver.id)
           // if (write === true) {
           //   setWriting('writting...')
           // }
+
           // In this condition the messege will be read for the sender if he is in connversation
           // at the moment when the reseiver enter to the conversation
           const myMessages = messages.filter((message) => message.user_id === user.id);
           const unreadMessages = myMessages.filter((message) => message.unread === true)
           dispatch(markMessagesAsRead(unreadMessages))
           // console.log('piszę... @@@@@@@', message.userId, receiver.id) 
-          setLetter('active')
-          setActive('pisze...')
+
+          // setLetter('active')
+          // setActive('pisze...')
           // setWriting(false)
           // if (!letter) {
           //   setTimeout(() => {
@@ -166,6 +190,12 @@ const Conversation = ( props ) => {
           // writingFunc()
         } 
       } 
+      // if ( lastMessage.user_id === receiver.id ) {
+      //   const receiverMessages_ = messages.filter((message) => message.user_id === receiver.id);
+      //   const unreadMessages_ = receiverMessages_.filter((message) => message.unread === true)
+      //   console.log('unreadMessages_', unreadMessages_)
+      //   dispatch(markMessagesAsRead(unreadMessages_))
+      // }
       if ( message.type === 'received_message' ) {
         // console.log('received new message', message);
         dispatch(addMessage({
@@ -200,7 +230,7 @@ const Conversation = ( props ) => {
         // dispatch(addMessage(newMessage));
         console.log('sendMessage', newMessage, receiver.conv);
         // console.log('sendMessage data', socket);
-        socket.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv, receiverId: receiver.id }));
+        socket.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv, receiverId: receiver.id, senderId: user.id }));
         // wsu.send(JSON.stringify({type: 'new_message_count', count: 1 }));
         setNewMessage('');
         // set up the sent message on the bottom

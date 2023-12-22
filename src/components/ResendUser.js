@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { serverIP, wsIP } from '../config'
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setMessages, addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
 
@@ -24,10 +24,13 @@ const ResendUser = ({ user_, resendMess }) => {
   const [writing, setWriting] = useState(false)
   const [socket, setSocket] = useState([])
 
+  const navigate = useNavigate();
+
 
   useEffect(() => {
 
-    console.log('resendMess in ResendUser', resendMess, user_)
+    console.log('unreadMessages in ResendUser', receiverMessages)
+
     const wsConv = new WebSocket(`${wsIP}/ws/conversation/${user_.conv}/?userId=${user_.id}`); //&token=${user.token}
 
     wsConv.onmessage = (event) => {
@@ -47,12 +50,14 @@ const ResendUser = ({ user_, resendMess }) => {
             id: message.id,
             content: message.content,
             username: message.username,
-            user_id: user_.id,
-            unread: false,
+            user_id: user.id,
+            unread: true,
+            resend: true,
             photo: user_.photo,
             conversation_id: user_.conv,
             timestamp: message.timestamp,
           }));
+          navigate('/AllUsers')
         }
       }
 
@@ -84,13 +89,14 @@ const ResendUser = ({ user_, resendMess }) => {
   }
 
 
-  const testIno = (user_) => {
-    console.log('testIno', user_.conv)
+  const resend = (user_) => {
+    console.log('resend', user_.conv)
     socket.send(JSON.stringify({ type: 'resend_message', message: resendMess, id: user_.conv }));
+    // navigate("/AllUsers")
   }
 
   return (
-    <div className="user-list-item" key={user_.id} onClick={() => testIno(user_)}>
+    <div className="user-list-item" key={user_.id} onClick={() => resend(user_)}>
       <div className="user-link-in">
 
         <div className='row_cont'>
