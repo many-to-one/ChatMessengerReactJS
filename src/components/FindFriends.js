@@ -77,7 +77,7 @@ const FindFriends = (params) => {
           };
 
         } else {
-          navigate("/login")
+          navigate("/")
         }
 
       }, [])
@@ -160,7 +160,7 @@ const FindFriends = (params) => {
               />
             ))}
           </div>
-          <button onClick={test}>Test</button>
+          {/* <button onClick={test}>Test</button> */}
         </div>
       );
 }

@@ -33,6 +33,20 @@
     overflow-anchor: none;
   }
 
+  .blur {
+    /* filter: blur(5px);  */
+    opacity: 0;
+    height: 10%;
+  }
+
+  .add_users_items {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 90vh;
+  }
+
   .userPhotoRight {
     width: 40px;
     height: 40px;
@@ -100,7 +114,7 @@
   input {
     flex-grow: 1; /* Allow the input field to grow to take available space */
     padding: 10px; /* Add padding as desired */
-    border: 1px solid #ccc; /* Border styles */
+    border: 1px solid #77037B; /* Border styles */
     border-radius: 5px;
     margin-right: 10px; /* Margin between input and button */
 }
@@ -131,8 +145,10 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
   gap: 10px;
+  /* margin-left: -50vw; */
 }
 
 .confirm_row_cont {
@@ -172,9 +188,27 @@
   overflow-x: auto;
 }
 
-/* .chatPhoto {
-  padding: 5px;
-} */
+
+.chat_users {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  /* margin-left: -50vw; */
+}
+
+.add_users_cont {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(161, 57, 145, 0.507); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 .head_column {
   display: flex;
@@ -182,8 +216,13 @@
   align-items: center;
   justify-content: flex-start;
   gap: 0px;
+  height: 10vh;
 }
 
 .head_column p {
+  font-size: 10px;
+}
+
+.timestamp {
   font-size: 10px;
 }

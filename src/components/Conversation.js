@@ -28,6 +28,19 @@ import { useUser } from '../context/userContext.js';
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
 
+import { 
+  TiArrowLeft, 
+  TiEquals, 
+  TiDeleteOutline, 
+  TiCameraOutline, 
+  TiVolumeMute, 
+  TiUserDeleteOutline, 
+  TiEyeOutline, 
+  TiLocationArrowOutline,
+  TiArrowBackOutline, 
+} 
+from "react-icons/ti";
+
 const Conversation = ( props ) => {
 
   // Reseived props:
@@ -76,12 +89,12 @@ const Conversation = ( props ) => {
 
   const [hasScrolled, setHasScrolled] = useState(false);
   
-  // useEffect(() => {
-  //   if ( !hasScrolled ) {
-  //     window.scrollTo({ top: chatContainerRef.current.scrollHeight})
-  //   }
-  //   // console.log('window.scrollTo', chatContainerRef.current.scrollHeight)
-  // }, [])
+  useEffect(() => {
+    if ( !hasScrolled ) {
+      window.scrollTo({ top: chatContainerRef.current.scrollHeight})
+    }
+    // console.log('window.scrollTo', chatContainerRef.current.scrollHeight)
+  }, [])
 
   const sleep = (milliseconds) => {
     return new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -206,9 +219,9 @@ const Conversation = ( props ) => {
           unread: message.unread,
           photo: message.photo,
           conversation_id: message.conversation_id,
-          timestamp: message.timestamp,
+          timestamp: message.timestamp.slice(1,17),
         }));
-        console.log('messages after --- ', messages)
+        console.log('message timestamp --- ', message.timestamp.slice(1,17))
         setHasScrolled(false) // Get you to the bottom of the page if is incoming data from the server
       }
     }
@@ -227,25 +240,19 @@ const Conversation = ( props ) => {
     console.log('sendMessage ssock', socket);
     if (socket && socket.readyState === WebSocket.OPEN) {
       if (newMessage) {
-        // dispatch(addMessage(newMessage));
         console.log('sendMessage', newMessage, receiver.conv);
-        // console.log('sendMessage data', socket);
         socket.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv, receiverId: receiver.id, senderId: user.id }));
-        // wsu.send(JSON.stringify({type: 'new_message_count', count: 1 }));
         setNewMessage('');
+
+        // Calculate the new scroll position with an offset of 20px
+        const scrollPosition = chatContainerRef.current.scrollHeight + 50;
+
         // set up the sent message on the bottom
-        window.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })
+        window.scrollTo({ top: scrollPosition, behavior: "smooth" })
       }
     }
-    // ssock.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv, receiverId: receiver.id }));
-    //     // wsu.send(JSON.stringify({type: 'new_message_count', count: 1 }));
-    //     setNewMessage('');
-    //     // set up the sent message on the bottom
-    //     window.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })
 
   };
-
-// console.log('messages After', messages)
 
   const handleChange = (e) => {
     setNewMessage(e.target.value);
@@ -286,6 +293,7 @@ const getBack = () => {
 const showDialog = () => {
   if ( dialog ) {
     setDialog(false)
+    setDelQuestion(false)
   } else {
     setDialog(true)
   }
@@ -340,21 +348,18 @@ const delQuest = () => {
 
       <div className='conv_header'>
         <div className={`${showConfirmation ? ' confirm_row_cont' : 'conv_row_cont'}`}>
-          <div className='conv_start'>
-            <p onClick={() => getBack()}>@</p>
+          {/* <div className='conv_start'>
+            <p onClick={() => getBack()}>
+              <TiArrowLeft 
+                size={35}
+              />
+            </p>
             { receiver.photo ?
               <img src={serverIP + receiver.photo} alt={receiver.username} className="user-photo" />
               :
               <img src={serverIP + 'media/profile_photos/profile.png'} alt={receiver.username} className="user-photo" />
             }
-            {/* <div>
-            {write ? (
-                    <p>{writing}</p>
-                  ) : (
-                    <p>000</p>
-                  )}
-            </div> */}
-          </div>
+          </div> */}
           {showConfirmation ?
             <ConfirmationDialog
               conversation={conversation}
@@ -365,24 +370,50 @@ const delQuest = () => {
               onConfirm={() => deleteMess(messageToDelete)}
             />
             :
-            <div className='name_del_row_cont'>
-              <p>{receiver.username}</p>
-              <button onClick={() => showDialog()}>...</button>
+            <div className='conv_row_cont'>
+              <div className='conv_start'>
+                <p onClick={() => getBack()}>
+                  <TiArrowLeft 
+                    size={35}
+                  />
+                </p>
+                { receiver.photo ?
+                  <img src={serverIP + receiver.photo} alt={receiver.username} className="user-photo" />
+                  :
+                  <img src={serverIP + 'media/profile_photos/profile.png'} alt={receiver.username} className="user-photo" />
+                }
+                <p>{receiver.username}</p>
+              </div>
+              
+              <TiEquals 
+                size={30}
+                onClick={() => showDialog()}
+              />
             </div>
           }
         </div>
       </div>
 
-    <div className='chat-container-inner'>
       { dialog &&
         <div className='conv_header'>
           <div className='confirm_row_cont'>
-            <button type="">Mute</button>
-            <button type="">Multimedia</button>
-            <button onClick={() => delQuest()}>Del</button>
+            <TiCameraOutline 
+              size={30}
+            />
+            <TiVolumeMute 
+              size={30}
+            />
+            <TiUserDeleteOutline 
+              size={30}
+              onClick={() => delQuest()}
+            />
             { delQuestion && 
               <button onClick={() => delUser(receiver.id)}>!</button>
             }
+            <TiDeleteOutline 
+              size={30}
+              onClick={() => showDialog()}
+            />
           </div>
         </div>
       }
@@ -393,17 +424,27 @@ const delQuest = () => {
                 {message.user_id === user.id ?
                   <div className='message right'>
                     <div className='conf_dialog'>
-                      {message.photo ? 
-                        <img src={serverIP + message.photo} alt={message.username} className="userPhotoRight" />
+                      {user.photo ? 
+                        <img src={serverIP + user.photo} alt={message.username} className="userPhotoRight" />
                         :
                         <img src={serverIP + '/media/profile_photos/profile.png'} alt={message.username} className="userPhotoRight" /> 
                       }
                       <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
                     </div>
                     {message.unread ? 
-                      <p className='unread'>-</p> 
+                    <div className='conv_row_cont'>
+                      <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                      <p className='unread'>
+                        <TiLocationArrowOutline size={20}/>
+                      </p> 
+                    </div>
                       :
-                      <p className='unread'>+</p>
+                      <div className='conv_row_cont'>
+                        <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                        <p className='unread'>
+                          <TiEyeOutline size={20}/>
+                        </p>
+                      </div>
                     }
                   </div>
                 :
@@ -411,24 +452,33 @@ const delQuest = () => {
                   {message.resend ? 
                     <div className='message left'>
                       <div className='conf_dialog'>
-                        {message.photo ? 
-                          <img src={serverIP + message.photo} alt={message.username} className="userPhotoLeft" />
+                        {receiver.photo ? 
+                          <img src={serverIP + receiver.photo} alt={message.username} className="userPhotoLeft" />
                           :
                           <img src={serverIP + '/media/profile_photos/profile.png'} alt={message.username} className="userPhotoLeft" /> 
                         }
                         <p>{message.content}</p>
-                      </div>
-                      <p>'resend'</p>
+                        <div className='conv_row_cont'>
+                          <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                          <TiArrowBackOutline 
+                            size={20}
+                            color='#77037B'
+                          />
+                        </div>
+                      </div> 
                     </div>
                   :
                     <div className='message left'>
                       <div className='conf_dialog'>
-                        {message.photo ? 
-                          <img src={serverIP + message.photo} alt={message.username} className="userPhotoLeft" />
+                        {receiver.photo ? 
+                          <img src={serverIP + receiver.photo} alt={message.username} className="userPhotoLeft" />
                           :
                           <img src={serverIP + '/media/profile_photos/profile.png'} alt={message.username} className="userPhotoLeft" /> 
                         }
-                        <p>{message.content}</p>
+                        <div>
+                          <p>{message.content}</p>
+                          <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                        </div>
                       </div>
                     </div>
                   }
@@ -446,9 +496,15 @@ const delQuest = () => {
           onChange={handleChange}
           placeholder="Type your message..."
         />
-        <button onClick={sendMessage}>Send</button>
+        {/* <button onClick={sendMessage}>Send</button> */}
+        <TiLocationArrowOutline 
+          onClick={sendMessage}
+          size={30}
+          color='#77037B'
+
+        />
       </div>
-    </div>
+
   </div>
 
   );

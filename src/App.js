@@ -15,6 +15,7 @@ import { UserProvider } from './context/userContext';
 import FindFriends from './components/FindFriends';
 import { Provider } from 'react-redux';
 import store from './store.js'
+import AddUsersToChat from './components/AddUsersToChat.js';
 
 
 
@@ -39,14 +40,14 @@ function AppContent() {
   // Determine if the Header should be hidden
   const isConversationPage = location.pathname === '/conversation';
   const isChatPage = location.pathname === '/chat';
-  const isLoginPage = location.pathname === '/login';
+  const isLoginPage = location.pathname === '/';
 
   return (
     <>
       {!isConversationPage && !isLoginPage && !isChatPage && <Header />}
       <Routes>
         <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/404" element={<NotFound />} />
         <Route path="/createChat" element={<CreateChat />} />
@@ -57,6 +58,7 @@ function AppContent() {
         <Route path="*" element={<AllUsers />} />
         <Route path="/allUsersResend" element={<AllUsersResend />} />
         <Route path="/conversation" element={<Conversation />} />
+        <Route path="/addUsersToChat" element={<AddUsersToChat />}/>
       </Routes>
     </>
   );

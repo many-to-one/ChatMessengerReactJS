@@ -10,6 +10,20 @@ import AddUsersToChat from './AddUsersToChat.js';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessage, removeMessage } from '../features/messages/messagesSlice.js';
+import { setChatUser, addChatUser, removeChatUser, clearChatUsers } from '../features/messages/chatUsersSlice.js';
+
+import { 
+  TiArrowLeft, 
+  TiEquals, 
+  TiDeleteOutline, 
+  TiCameraOutline, 
+  TiVolumeMute, 
+  TiUserDeleteOutline, 
+  TiEyeOutline, 
+  TiLocationArrowOutline,
+  TiArrowBackOutline, 
+} 
+from "react-icons/ti";
 
 const Chat = (props) => {
 
@@ -24,7 +38,12 @@ const Chat = (props) => {
   const dispatch = useDispatch();
   const allChatMessages = useSelector((state) => state.messages);
   const messages = allChatMessages.filter((message) => message.chat_id === chat.id);
-  console.log('allChatMessages', allChatMessages)
+  console.log('allChatMessages', messages)
+  const users = useSelector((state) => state.users);
+  const chatUsers = useSelector((state) => state.chatUsers);
+  const chatUs = users.filter((user) => chat.user.includes(user.id));
+  console.log('chatUs', chatUs)
+  const chatChat = users.filter((user) => user.id === chat.user)
 
   const [data, setData] = useState(null)
 
@@ -32,16 +51,16 @@ const Chat = (props) => {
   const [usersPhotos, setUsersPhotos] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState(null);
-  const mess = [];
-  const [chatUsers, setChatUsers] = useState([{userId:user}]);
-  const [userList, setUserList] = useState([]);
-  const [showUserList, setShowUserList] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [userToDelete, setUserToDelete] = useState([]);
   const [userDelQuest, setUserDelQuest] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [dialog, setDialog] = useState(false)
+  const [showAddUsers, setShowAddUsers] = useState(false)
+  const [creater, setCreater] = useState();
+
+  const [chatUsers_, setChatUsers_] = useState([]);
 
   // const to make a new message been on the bottom of the chat
   const chatContainerRef = useRef(null);
@@ -61,52 +80,30 @@ const Chat = (props) => {
 
   useEffect(() => {
     window.scrollTo({ top: chatContainerRef.current.scrollHeight})
+    console.log('CHAT', chat.user)
+    console.log('USERS', users)  
   })
 
 
+  // useEffect(() => {
+  //   if(chatUsers_.length === 0){
+  //     updateChatUsers();
+  //   }
+  // },[])
 
-  //  ################################################################################################### //
-  //  ##################################### SHOW ALL CHAT MESSAGES ###################################### //
-  //  ################################################################################################### //
 
+  // const updateChatUsers = () => {
+  //   console.log('updateChatUsers worked')
+  //   chat.user.map((us) => {
+  //     users.map((user) => {
+  //       if (us === user.id) {
+  //         setChatUsers_((prevUsers) => [...prevUsers, user]); // Collect matching users in an array
+  //       }
+  //     });
+  //   });  
+  // };
 
-  // const allMessages = async () => {
-
-  //   axios
-  //   .get(
-  //     `${serverIP}/allMessages/${chatID}/`,
-  //     { 
-  //       headers: {
-  //         Authorization: `Bearer ${user.token}`,
-  //       },
-  //     }
-  //   )
-  //   .then((response) => {
-  //     console.log('response.data Chat', response.data)
-  //     for (const message of response.data.messages) {
-  //       const messageObject = {
-  //         id: message.id,
-  //         username: message.username,
-  //         message: message.content,
-  //         photo: message.photo,
-  //       };
-  //       mess.push(messageObject);
-  //     }
-  //     setMessages(mess)
-  //     setChatUsers(response.data.chat.user)
-  //     setUsersPhotos(response.data.photos)
-  //     console.log('usersPhotos', usersPhotos)
-  //   })
-  //   .catch((error) => {
-  //     console.error('Error fetching conversation data:', error);
-  //     if(error.response.status === 403){
-  //       nav('/login')
-  //     }else if (error.response.status === 404){
-  //       nav('/404')
-  //     }
-  //   });
-
-  // }
+  // console.log('chatUsers_@_', chatUsers_);
 
 
 
@@ -115,85 +112,65 @@ const Chat = (props) => {
   //  ################################################################################################### //
 
   const ws = new WebSocket(`${wsIP}/ws/chat/${chatID}/?userId=${user.id}&token=${user.token}`);
+
+  useEffect(() => {
+
+    const data = {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    };
+
+    axios.get(`${serverIP}/chatUsers/${chatID}/`, data)
+    .then((response) => {
+      console.log('chatUsers axios', response)
+      setChatUsers_(response.data.chat)
+      setCreater(response.data.creater)
+    })
+    .catch((error) => {
+      console.log('chatUsers axios error', error)
+    })
+  },[])
   
   useEffect(() => {
 
-    // const ws = new WebSocket(`${wsIP}/ws/chat/${chatID}/?userId=${user.id}&token=${user.token}`);
-  // setSocket(ws);
-
-    // if(ws) {
-    //   ws.onopen = () => {
-    //     console.log('WebSocket connection opened');
-    //     // allMessages()
-    //   };
-    //   ws.onclose = () => {
-    //     console.log('WebSocket connection closed');
-    //     nav('/login'); 
-    //   };
-    // } else {
-    //   nav('/login')
-    // }
-
-
     // Receive data from server via socket
     ws.onmessage = (event) => {
+
       const message = JSON.parse(event.data);
-      console.log('message', message);
+
       if (message.type === 'message_deleted') {
         console.log('message_deleted', message.id);
+        dispatch(removeMessage(message.id));
         // Handle message deletion by filtering out the deleted message
-        // setMessages((prevMessages) => {
-        //   const updatedMessages = prevMessages.filter((msg) => msg.id !== message.id);
-        //   console.log('updatedMessages', updatedMessages);
-        //   return updatedMessages;
-        // });
-      } else if (message.type == 'added_message') {
+      } else if (message.type === 'added_message') {
 
         dispatch(addMessage({
           id: message.id,
-          message: message.message,
+          content: message.message,
           username: message.username,
           user_id: message.user_id,
           unread: message.unread,
           photo: message.photo,
           chat_id: message.chat_id,
+          timestamp: message.timestamp.slice(1,17),
         }));
 
-        console.log('addMessage');
+        console.log('addMessage', message);
 
-        // setMessages((prevMessages) => [...prevMessages, { id: message.id, message: message.message, username: message.username, photo: message.photo }]);
-        // scrollToBottom();
       } else if (message.type == 'added_users') {
-        setSelectedUsers((prevMessages) => [...prevMessages, { users: message, }]);
-        setChatUsers((prevMessages) => [...prevMessages, message.id]); 
-        console.log('ChatUsers', chatUsers);
 
-        setUsersPhotos((prevPhotos) => {
-          const userPhotoToUpdate = prevPhotos.find((photo) => photo.username === message.username);
-        
-          if (userPhotoToUpdate) {
-            // Update the existing user's photo if found
-            return prevPhotos.map((photo) => {
-              if (photo.username === message.username) {
-                return { ...photo, photo: message.photo };
-              }
-              return photo;
-            });
-          } else {
-            // Add a new user with photo if not found
-            return [...prevPhotos, { id: message.id, username: message.username, photo: message.photo }];
-          }
-        });
+        setShowAddUsers(false);
+
+        let newUser = users.filter((us) => us.id === message.id)
+        console.log('@_newUser_@', newUser)
+        setChatUsers_((usr) => [...usr, newUser[0]])
+      
       } else if (message.type == 'user_deleted') {
+
         setUsersPhotos((prevUsers) => {
           // Use the filter method to remove the user with the specified id
           const updatedUsers = prevUsers.filter((user) => user.id !== message.user_id);
-          return updatedUsers;
-        });
-        setChatUsers((prevUsers) => {
-          // Use the filter method to remove the user with the specified id
-          const updatedUsers = prevUsers.filter((user) => user !== message.user_id);
-          console.log('updateChatUsers', updatedUsers, message.user_id);
           return updatedUsers;
         });
       }
@@ -240,58 +217,6 @@ const Chat = (props) => {
 
 
 
-  const addUsers = () => {
-
-    console.log('addUsers chatUsers', chatUsers)
-
-    // Define the URL for fetching users
-    const usersURL = `${serverIP}/auth/users/`;
-    
-    // Make an HTTP GET request to fetch users
-    axios.post(usersURL, 
-      {chatUsers},
-       {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        }
-       }
-      )
-      .then((response) => {
-        // On success, set the retrieved users in state
-        console.log('allUsersList', response.data)
-        setUserList(response.data.usersToChat)
-        // setShowUserList(true)
-        if (showUserList === false){
-          setShowUserList(true)
-        } else {
-          setShowUserList(false)
-        }
-      })
-      .catch((error) => {
-        // On error, set the error state
-        // setError(error);
-        if(error.response.status === 403){
-          nav('/login')
-        }else if (error.response.status === 404){
-          nav('/404')
-        }
-      });
-  }
-
-  const confirmUsers = (users_) => {
-    const users = {
-      type: 'add_users',
-      users: users_,
-      chatId: chatID,
-    };
-    // setSelectedUsers(users_)
-    console.log('selectedUsers', users)
-    if (socket && socket.readyState === WebSocket.OPEN){
-      socket.send(JSON.stringify(users));
-    }
-    setShowUserList(false)
-  }; 
-
 
 
   //  ################################################################################################### //
@@ -322,9 +247,16 @@ const Chat = (props) => {
       if (socket && socket.readyState === WebSocket.OPEN){
         socket.send(JSON.stringify(message));
         setShowConfirmation(false);
+        setChatUsers_((prevUsers) => {
+          // Use the filter method to remove the user with the specified id
+          const updatedUsers = prevUsers.filter((user) => user.id !== data.id);
+          console.log('updateChatUsers', updatedUsers, data.id);
+          return updatedUsers;
+        });
       }
     }
   }
+
 
   const cancelDelete = () => {
     setShowConfirmation(false);
@@ -350,6 +282,7 @@ const Chat = (props) => {
   }
 
   const confirmDelete = (id) => {
+    console.log('confirmDelete, chat', id)
       setConfirmationMessage(`Are you sure you want to delete this message?`);
       setMessageToDelete(id);
       // setShowConfirmation(true);
@@ -364,17 +297,47 @@ const Chat = (props) => {
     navigate('/allChats')
   }
 
+
+  const showDialog = () => {
+    if ( dialog ) {
+      setDialog(false)
+      console.log('dialog false')
+    } else {
+      setDialog(true)
+      console.log('dialog true')
+      setShowConfirmation(true)
+    }
+  }
+
+  const showAdd = () => {
+    if(showAddUsers === false){
+      setShowAddUsers(true)
+    } else {
+      setShowAddUsers(false)
+    }
+  }
+
+  const addUsrs = (usrs) => {
+    
+    if (socket && socket.readyState === WebSocket.OPEN){
+      socket.send(JSON.stringify({type: 'add_users', users: usrs, chatId: chat.id}));
+      setShowConfirmation(false);      
+    }
+  }
+
+
   return (
+
     <div className='chat-container'>
 
         <div className='conv_header'>
   
           {showConfirmation ? (
             <div className='confirm_row_cont'>
-              {/* <p onClick={() => getBack()}>@</p>  */}
               <ConfirmationDialog
                 data={data}
-                // isOpen={showConfirmation}
+                addOpen={showAdd}
+                chat_id={chat.id}
                 resendMess={messageToDelete}
                 message={confirmationMessage}
                 onConfirm={() => deleteMess(messageToDelete, data)}
@@ -384,45 +347,79 @@ const Chat = (props) => {
             </div>
           ) : (      
             <div className='conv_row_cont'>
-              <p onClick={() => getBack()}>@</p>      
               <div className='conv_start'>
-                {usersPhotos.map((usr) => (
-                  <div key={usr.id}>
-                    <div className='head_column' onClick={() => setDeleteUser(usr)}>
-                      <img src={serverIP + usr.photo} className="userPhotoRight" alt="User Photo" />
-                      <p>{usr.username}</p>
+                <p onClick={() => getBack()}>
+                  <TiArrowLeft 
+                    size={35}
+                  />  
+                </p>      
+            
+                <div className='chat_users'>
+                  {chatUsers_.map((usr) => (
+                    <div key={usr.id}>
+                      {user.username === creater ?
+                        <div className='head_column' onClick={() => setDeleteUser(usr)}>
+                          <img src={serverIP + usr.photo} className="userPhotoRight" alt="User Photo" />
+                          <p>{usr.username}</p>
+                        </div>
+                        :
+                        <div className='head_column'>
+                          <img src={serverIP + usr.photo} className="userPhotoRight" alt="User Photo" />
+                          <p>{usr.username}</p>
+                        </div>
+                      }
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+
+              <div>
+                <TiEquals 
+                  size={30}
+                  onClick={() => showDialog()}
+                />
+              </div>
+
             </div>
           )}
         </div>
 
-        <div className='chat' ref={chatContainerRef}>
+
+        <div className={`chat ${showAddUsers ? 'blur' : ''}`} ref={chatContainerRef}>
+
           {messages.map((message, index) => (
             <div key={index}>
-              {message.username === user.username ?
+              {message.user_id === user.id ?
                 <div className='message right'>
                   <div className='conf_dialog'>
-                    {message.photo ? 
-                      <img src={serverIP + message.photo} className="userPhotoRight" />
+                    {user.photo ? 
+                      <img src={serverIP + user.photo} className="userPhotoRight" />
                       :
-                      <img src={serverIP + 'media/profile_photos/default.png'} className="userPhotoRight" /> 
+                      <img src={serverIP + '/media/profile_photos/profile.png'} className="userPhotoRight" /> 
                     }
-                    <p onClick={() => confirmDelete(message.id)}>{message.message}{' '}x</p>
+                    <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
                   </div>
                   {message.unread ? 
-                    <p className='unread'>-</p> 
+                    <div className='conv_row_cont'>
+                      <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                    </div> 
                     :
-                    <p className='unread'>+</p>
+                      <div className='conv_row_cont'>
+                        <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                      </div>
                   }
                 </div>
               :
               <div>
-                <strong>{message.username}</strong>
                 <div className='message left'>
-                  <p>{message.message}</p>
+                <div className='conf_dialog'>
+                    {user.photo ? 
+                      <img src={serverIP + user.photo} className="userPhotoRight" />
+                      :
+                      <img src={serverIP + '/media/profile_photos/profile.png'} className="userPhotoRight" /> 
+                    }
+                    <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
+                  </div>
                 </div>
               </div>
               }
@@ -430,14 +427,16 @@ const Chat = (props) => {
           ))}
         </div>
 
-        <AddUsersToChat
-          isOpen={showUserList}
-          userList={userList}
-          onConfirm={confirmUsers}
-        />
+
+        {showAddUsers && 
+          <AddUsersToChat 
+            chat_id={chat.id}
+            showAddUsers={showAddUsers}
+            onConfirm={addUsrs}
+          />
+        }
 
         <div className='send'>
-          <button className='sendButton' onClick={() => addUsers()}>+</button>
           <input
             type="text"
             value={newMessage}

@@ -1,33 +1,68 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {serverIP} from '../config.js';
+import { useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useUser } from '../context/userContext.js';
 
-const AddUsersToChat = ({isOpen, userList, onConfirm}) => {
+const AddUsersToChat = ({chat_id, onConfirm, onClick}) => {
+
+  // Access the state passed from the ConfirmationDialog
+  // const location = useLocation();
+  // const searchParams = new URLSearchParams(location.search);
+  // const chat_id = searchParams.get('data');
+
   const [ users, setUsers ] = useState([])
+  const [ _users, set_Users ] = useState([])
   const [ selected, setSelected ] = useState(false)
   // console.log('users', users)
+
+  const users_ = useSelector((state) => state.users);
+
+  const { user } = useUser();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const data = {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    };
+
+    axios.get(`${serverIP}/chatUsers/${chat_id}/`, data)
+    .then((response) => {
+      if(response.status === 200){
+        console.log('chatUsers', response.data.chat)
+        const chatUserIds = response.data.chat.map(user => user.id);
+        const usersToAdd = users_.filter((user) => !chatUserIds.includes(user.id))
+        console.log('usersToAdd', usersToAdd)
+        setUsers(usersToAdd)
+      }
+    })
+    .catch((error) => {
+      navigate('/')
+    })
+  },[chat_id])
  
   const addUser = (id) => {
-    if ( !users.includes(id) ) {
-      setUsers((users) => [...users, id])
+    console.log('id', id)
+    if ( !_users.includes(id) ) {
+      set_Users((users) => [...users, id])
       setSelected(true)
     } else {
       // If it's already in the array, remove it
-      setUsers((users) => {
+      set_Users((users) => {
         const updatedUsers = users.filter((uid) => uid !== id);
         return updatedUsers;
       });
       setSelected(false)
     }
-    console.log('addUser', users)
+    console.log('addUser', _users)
   }
 
-
   return (
-    <div>
-      { isOpen &&
-        <div>
-        <div className="user-list-items">
-          {userList.map((user) => (
+        <div className="add_users_items">
+          {users.map((user) => (
             <div className={users.includes(user.id) ? "user-list-item-green" : "user-list-item"} key={user.id}>
             <div className="user-link">
               <div className="user-link-in">
@@ -45,12 +80,11 @@ const AddUsersToChat = ({isOpen, userList, onConfirm}) => {
             </div>
           </div>
           ))}
-        </div>
-        <button onClick={() => onConfirm(users)}>Add</button>
+        <button onClick={() => onConfirm(_users)}>Add</button>
       </div>
-      }
-    </div>
+
   )
+
 }
 
 export default AddUsersToChat

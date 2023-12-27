@@ -4,21 +4,30 @@ import { serverIP } from '../config.js';
 import { useNavigate } from 'react-router-dom';
 import '../styles/DialogWindow.css';
 
-const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCancel, user, data }) => {
+import { TiTrash, TiArrowBackOutline, TiArrowLeft, TiUserAddOutline } from "react-icons/ti";
+
+const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCancel, user, data, chat_id, addOpen }) => {
 
   const [users, setUsers] = useState([])
+  const [delChatConf, setDelChatConf] = useState(false)
   const token = user.token
 
   // const { user } = useUser();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // deb4a2ae-31af-4918-90a8-5296390629b7e2ae3f06-fe17-4b44-95df-99d034b8d773f20ca5ef-14eb-4f49-b9e7-7ca4906077ce
+  // console.log('resendMess', resendMess)
+  // console.log('onConfirm', onConfirm)
+  // console.log('onCancel', onCancel)
+  // console.log('user', user)
+  // console.log('data', data)
+  // console.log('chat_id', chat_id)
+  // console.log('addOpen', addOpen)
 
-    console.log('resendMess', resendMess)
+
+  useEffect(() => {
     
     if ( !user ) {
-      navigate("/login")
+      navigate("/")
     }
     // Define an Axios config object with the Authorization header.
     const config = {
@@ -39,7 +48,7 @@ const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCa
       .catch((error) => {
         console.error('Error fetching data:', error.response.status);
         if(error.response.status === 403){
-          navigate('/login')
+          navigate('/')
         }else if (error.response.status === 404){
           navigate('/404')
         }
@@ -51,25 +60,125 @@ const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCa
     navigate(`/allUsersResend?data=${resendMess}`);
   }
 
+
+  const delChat_ = (id) => {
+    console.log('delChat_', id)
+    setDelChatConf(true)
+  }
+
+
+  const delChatAbsolute = (id) => {
+
+    const data = {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+        userId: user.id,
+      },
+    };
+
+    axios.get(`${serverIP}/deleteChat/${id}/`, data)
+    .then((response) => {
+      if(response.status === 200){
+        navigate('/AllChats')
+      }
+    })
+    .catch((error) => {
+      navigate('/')
+    })
+  }
+
+
+  // const addUsersToChat = () => {
+  //   navigate(`/addUsersToChat?data=${chat_id}`)  
+  // }
+
+
   return data ? (
     <div>
        <div className='conf_dialog'>
-         {/* <button onClick={() => resend(resendMess)}>#</button> */}
-         <button onClick={onCancel}>--</button>
+         <p onClick={onCancel}>
+          <TiArrowLeft 
+            size={35}
+          />  
+        </p> 
          <div className='head_column'>
             <img src={serverIP + data.photo} className="userPhotoRight" alt="User Photo"></img>
             <p>{data.username}</p>
           </div>
-          <button onClick={() => onConfirm(data)}>Delete?</button>
+          <TiTrash 
+            onClick={() => onConfirm(data)}
+            size={30}
+          />
        </div>
      </div>
   ) : 
-    <div>
+  
+    chat_id ? (
+
+      delChatConf ? (
+        <div>
+          <div className='conf_dialog'>
+            <p onClick={onCancel}>
+              <TiArrowLeft 
+                size={35}
+              />  
+            </p>  
+            <p>Delete chat?</p>
+            <TiTrash 
+                size={30}
+                onClick={() => delChatAbsolute(chat_id)}
+              />
+          </div>
+        </div>
+      ) : (
+        resendMess ? (
+          <div>
+            <div className='conf_dialog'>
+              <TiArrowBackOutline 
+                size={30}
+                onClick={() => resend(resendMess)}
+              />
+              <TiTrash 
+                  size={30}
+                  onClick={onConfirm}
+                />
+            </div>
+          </div>
+        ) : (
+          <div>
+          <div className='conf_dialog'>
+            <p onClick={onCancel}>
+              <TiArrowLeft 
+                size={35}
+              />  
+            </p>  
+            <TiUserAddOutline 
+              size={30}
+              onClick={addOpen}
+            />
+            <TiTrash 
+                size={30}
+                onClick={() => delChat_(chat_id)}
+              />
+          </div>
+        </div>
+        )
+      )
+      
+    ) : (
+      <div>
       <div className='conf_dialog'>
-        <button onClick={() => resend(resendMess)}>#</button>
-        <button onClick={onConfirm}>Yes</button>
+        <TiArrowBackOutline 
+          size={30}
+          onClick={() => resend(resendMess)}
+        />
+        <TiTrash 
+            size={30}
+            onClick={onConfirm}
+          />
       </div>
-    </div>;
+    </div>
+    )
 };
 
 export default ConfirmationDialog;

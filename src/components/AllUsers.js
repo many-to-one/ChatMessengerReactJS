@@ -28,6 +28,7 @@ const AllUsers = (params) => {
 
 
       useEffect(() => {
+        console.log('USERS', users)
 
         { allMessages.length === 0 &&
           axios
@@ -42,7 +43,7 @@ const AllUsers = (params) => {
             })
             .catch((error) => {
               console.log('Error messageList', error)
-              navigate('/login')
+              navigate('/')
             })
         }
       }, [])
@@ -146,14 +147,6 @@ const AllUsers = (params) => {
 
 }, [])
 
-
-
-      // const checkIncomeFriendRequest = () => {
-      //   if (socket && socket.readyState === WebSocket.OPEN) {
-      //     console.log('friendRequest', 'socket OPEN')
-      //     socket.send(JSON.stringify({type: 'checkFriendRequest', userId: user.id}));
-      //   }
-      // };
 
 
 

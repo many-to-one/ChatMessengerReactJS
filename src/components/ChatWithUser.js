@@ -3,11 +3,12 @@ import { serverIP, wsIP } from '../config'
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setMessages, addMessage, removeMessage, markMessagesAsRead, unreadUserMessages } from '../features/messages/messagesSlice.js';
-// import { setWritingStatus } from '../features/messages/writingSlice.js';
 
 import { useUser } from '../context/userContext.js';
 
 import moment from 'moment';
+
+import { TiEyeOutline, TiLocationArrowOutline } from "react-icons/ti";
 
 const ChatWithUser = ({ user_, resendMess }) => {
 
@@ -162,9 +163,15 @@ const ChatWithUser = ({ user_, resendMess }) => {
                   ) : (
                     lastMessage.user_id === user.id ? (
                       lastMessage.unread ? (
-                        <p> - {lastMessage.content.slice(0, 30) + '...'}</p>
+                        <p className='conv_row_cont'> 
+                          <TiLocationArrowOutline size={20}/>
+                          {lastMessage.content.slice(0, 30) + '...'}
+                        </p>
                       ) : (
-                        <p> + {lastMessage.content.slice(0, 30) + '...'}</p>
+                        <p className='conv_row_cont'> 
+                          <TiEyeOutline size={20}/>
+                          {lastMessage.content.slice(0, 30) + '...'}
+                        </p>
                       )
                     ):(
                       <p>{lastMessage.content.slice(0, 30) + '...'}</p>

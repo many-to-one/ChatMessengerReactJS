@@ -6,6 +6,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import '../styles/Chat.css';
 import { useUser } from '../context/userContext.js';
 import '../styles/AllUsers.css';
+import { TiUserDeleteOutline } from 'react-icons/ti';
+import { setChatUser, addChatUser, removeChatUser, clearChatUsers } from '../features/messages/chatUsersSlice.js';
 
 
 const AllChats = (params) => {
@@ -14,6 +16,7 @@ const AllChats = (params) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [messageToDelete, setMessageToDelete] = useState(null);
+  const [delQuestion, setDelQuestion] = useState(false)
   const chatList = []
   const navigate = useNavigate();
   const { user } = useUser();
@@ -29,12 +32,14 @@ const AllChats = (params) => {
         setChats(response.data.chats)
         for (const chat of response.data.chats) {
             chatList.push(chat)
+            // dispatch(setChatUser(chat));
           }
+        console.log('chatList', chatList)
     })
     .catch((error) => {
         setMessage(error)
         if(error.response.status === 403){
-          navigate('/login')
+          navigate('/')
         }else if (error.response.status === 404){
           navigate('/404')
         }
@@ -68,7 +73,7 @@ const AllChats = (params) => {
   .catch((error) => {
       console.error('Error fetching getConvMess data:', error);
       if(error.response.status === 403){
-        navigate('/login')
+        navigate('/')
       }else if (error.response.status === 404){
         navigate('/404')
       }
@@ -76,13 +81,16 @@ const AllChats = (params) => {
   }
 
 
+
   return (
     <div className="user-list baseCont">
       <div className="user-list-items">
         {chats.map((chat) => (
-          <div className="user-list-item" key={chat.id}>
-            <Link className="user-link" to="/chat" state={chat}>{chat.name}</Link>
-          </div>
+            <div className="user-list-item" key={chat.id}>
+              <Link className="user-link" to="/chat" state={chat}>
+                {chat.name}
+              </Link>
+            </div>
         ))}      
       </div>
     </div>

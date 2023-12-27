@@ -9,8 +9,9 @@ import { useUser } from '../context/userContext.js';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser, clearUsers } from '../features/messages/usersSlice.js'
-import { clearFriendRequests } from '../features/messages/friendRequestSlice.js'
 import { setMessages, clearMessages } from '../features/messages/messagesSlice.js';
+
+import { TiUserAddOutline, TiMessages, TiGroupOutline, TiPower } from "react-icons/ti";
 
 const Header = () => {
 
@@ -41,7 +42,7 @@ const Header = () => {
       if (response.status === 200) {
         // Clear cookies
         // Redirect to the login page or another page
-        navigate('/login');
+        navigate('/');
       } else {
         console.error('Logout request was not successful:', response);
       }
@@ -56,7 +57,7 @@ const Header = () => {
       <nav>
         <ul>
           {user ? (
-            <div className='row_cont'>
+            <div className='nav_row_cont'>
              <li><Link to="/allUsers">
               {user.photo ? 
                 <img src={serverIP + user.photo} alt={user.username} className="userPhotoRight" />
@@ -66,23 +67,26 @@ const Header = () => {
               </Link>
              </li>
               <li>
-                <Link to="/findFriends">Find Friends</Link>
+                <Link to="/findFriends">
+                  <TiUserAddOutline size={30}/>
+                </Link>
               </li>
               <li>
-                <Link to="/allChats">All Chats</Link>
+                <Link to="/allChats">
+                  <TiMessages size={30}/>
+                </Link>
               </li>
               <li>
-                <Link to="/createChat">Create Chat</Link>
+                <Link to="/createChat">
+                  <TiGroupOutline size={30}/>
+                </Link>
               </li>
-              {/* <li>
-                <Link to="/logout">Log out</Link>
-              </li> */}
               <li onClick={handleLogout}>
-                Log out
+                <TiPower size={30}/>
               </li>
             </div>
           ) : (
-            <div className='row_cont'>
+            <div className='nav_row_cont'>
             </div>
           )}
         </ul>

@@ -39,7 +39,7 @@ const CreateChat = (props) => {
             // On error, set the error state
             setError(error);
             if(error.response.status === 403){
-              navigate('/login')
+              navigate('/')
             }else if (error.response.status === 404){
               navigate('/404')
             }
@@ -79,7 +79,7 @@ const CreateChat = (props) => {
         console.error('Error creating chat room:', error);
         setMessage('Failed to create chat room.');
         if(error.response.status === 403){
-          navigate('/login')
+          navigate('/')
         }else if (error.response.status === 404){
           navigate('/404')
         }
