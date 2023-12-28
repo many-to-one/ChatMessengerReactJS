@@ -29,6 +29,7 @@ const AllUsers = (params) => {
 
       useEffect(() => {
         console.log('USERS', users)
+        console.log('allMessages.length', allMessages.length)
 
         { allMessages.length === 0 &&
           axios
@@ -39,7 +40,7 @@ const AllUsers = (params) => {
             })
             .then((response) => {
               dispatch(setMessages(response.data.messages));
-              // console.log('response', response.data.messages)
+              console.log('response', response.data)
             })
             .catch((error) => {
               console.log('Error messageList', error)

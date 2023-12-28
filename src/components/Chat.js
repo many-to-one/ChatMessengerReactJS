@@ -10,18 +10,17 @@ import AddUsersToChat from './AddUsersToChat.js';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessage, removeMessage } from '../features/messages/messagesSlice.js';
-import { setChatUser, addChatUser, removeChatUser, clearChatUsers } from '../features/messages/chatUsersSlice.js';
 
 import { 
   TiArrowLeft, 
   TiEquals, 
-  TiDeleteOutline, 
-  TiCameraOutline, 
-  TiVolumeMute, 
-  TiUserDeleteOutline, 
-  TiEyeOutline, 
-  TiLocationArrowOutline,
-  TiArrowBackOutline, 
+  // TiDeleteOutline, 
+  // TiCameraOutline, 
+  // TiVolumeMute, 
+  // TiUserDeleteOutline, 
+  // TiEyeOutline, 
+  // TiLocationArrowOutline,
+  // TiArrowBackOutline, 
 } 
 from "react-icons/ti";
 
@@ -413,15 +412,27 @@ const Chat = (props) => {
               <div>
                 <div className='message left'>
                 <div className='conf_dialog'>
-                    {user.photo ? 
+                  {chatUsers_.map((usr, index) => (
+                    <div key={index}>
+                    {message.user_id === usr.id?
+                      <img src={serverIP + usr.photo} className="userPhotoRight" />
+                      :
+                      // <img src={serverIP + '/media/profile_photos/profile.png'} className="userPhotoRight" /> 
+                      null
+                    }
+                    </div>
+                  ))}
+                  
+                    {/* {user.photo ? 
                       <img src={serverIP + user.photo} className="userPhotoRight" />
                       :
                       <img src={serverIP + '/media/profile_photos/profile.png'} className="userPhotoRight" /> 
-                    }
+                    } */}
                     <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
                   </div>
+                  </div>
                 </div>
-              </div>
+              // </div>
               }
             </div>
           ))}
