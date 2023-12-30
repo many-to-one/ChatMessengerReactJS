@@ -6,6 +6,7 @@ import { useUser } from '../context/userContext.js';
 import IncomingRequest from './IncomingRequest.js';
 import ChatWithUser from './ChatWithUser.js';
 import axios from 'axios';
+import CryptoJS from "crypto-js";
 
 import { useDispatch, useSelector } from 'react-redux';
 import { setMessages, addMessage, removeMessage } from '../features/messages/messagesSlice.js';
@@ -28,25 +29,35 @@ const AllUsers = (params) => {
 
 
       useEffect(() => {
-        console.log('USERS', users)
-        console.log('allMessages.length', allMessages.length)
 
-        { allMessages.length === 0 &&
-          axios
+        const fetchMessages = async () => {
+          if (user.token !== null) {
+            { allMessages.length === 0 &&
+            await axios
             .get(`${ serverIP }`, {
               headers: {
                 Authorization: `Bearer ${user.token}`,
               }
             })
             .then((response) => {
-              dispatch(setMessages(response.data.messages));
-              console.log('response', response.data)
+              const decryptedMessages = response.data.messages.map((data) => {
+                const key = '123';
+                const decryptedContent = CryptoJS.AES.decrypt(data.content, key).toString(CryptoJS.enc.Utf8);
+                return { ...data, content: decryptedContent };
+              });
+              dispatch(setMessages(decryptedMessages));
             })
             .catch((error) => {
               console.log('Error messageList', error)
               navigate('/')
             })
+          }
+          } else {
+            navigate('/')
+          }
         }
+
+        fetchMessages()
       }, [])
 
 

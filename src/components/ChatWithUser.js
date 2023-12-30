@@ -7,6 +7,7 @@ import { setMessages, addMessage, removeMessage, markMessagesAsRead, unreadUserM
 import { useUser } from '../context/userContext.js';
 
 import moment from 'moment';
+import CryptoJS from "crypto-js";
 
 import { TiEyeOutline, TiLocationArrowOutline } from "react-icons/ti";
 
@@ -57,53 +58,57 @@ const ChatWithUser = ({ user_, resendMess }) => {
 
         if (message.type === 'received_message') {
 
-          console.log('RECEIVED_NEW_MESSAGE', message)
+          const key = '123'
+          const decrypted = CryptoJS.AES.decrypt(message.content, key).toString(
+            CryptoJS.enc.Utf8
+          );
 
           dispatch(addMessage({
             id: message.id,
-            content: message.content,
+            content: decrypted,
             username: message.username,
             user_id: message.user_id,
             unread: message.unread,
             photo: message.photo,
             conversation_id: message.conversation_id,
-            timestamp: message.timestamp,
+            timestamp: message.timestamp.slice(1,17),
           }));
 
           console.log('messCount', messCount)
           setMessCount(prevMessCount => prevMessCount + 1);
-          // console.log('received_message unread', message.unread_mess)
-          // console.log('userLastMessages', userLastMessages)
-
-          // if ( lastMessage.user_id === user_.id ) {
-          //   dispatch(markMessagesAsRead(unreadMessages))
-          // }
 
         } if (message.type === 'on_page_response') {
           console.log('users', user.id, user_.id, message.user_id)
 
           writingFunc() 
-
-          // dispatch(markMessagesAsRead(unreadMessages))
           
-          if ( lastMessage.user_id === user.id ) {
-            console.log('lastMessage.user_id', lastMessage.user_id)
-            dispatch(markMessagesAsRead(unreadMessages))
-
+          if (lastMessage) {
+            if ( lastMessage.user_id === user.id ) {
+              console.log('lastMessage.user_id', lastMessage.user_id)
+              dispatch(markMessagesAsRead(unreadMessages))
+  
+            }
           }
         
         } if (message.type === 'resend_message_') {
+
           console.log('resend_message_in_chatWith', message);
+
+          const key = '123'
+          const decrypted = CryptoJS.AES.decrypt(message.content, key).toString(
+            CryptoJS.enc.Utf8
+          );
+
           dispatch(addMessage({
             id: message.id,
-            content: message.content,
+            content: decrypted,
             username: message.username,
             user_id: message.user_id,
             unread: true,
             resend: true,
             photo: user_.photo,
             conversation_id: user_.conv,
-            timestamp: message.timestamp,
+            timestamp: message.timestamp.slice(1,17),
           }));
         } if (message.type === 'on_chatUser_response') {
           console.log('on_chatUser_response', message.receiverId, message.unreadMess)
@@ -127,11 +132,12 @@ const ChatWithUser = ({ user_, resendMess }) => {
   let date = ''
 
   if ( lastMessage ) {
+    console.log('lastMessage.timestamp', lastMessage.timestamp)
     // let date = user_.last_mess.timestamp.slice(1, 11 )
     date = lastMessage.timestamp.slice(0, 10 )
 
-    if ( lastMessage.timestamp.slice(1, 11 ) === moment().format().slice(0, 10) ) {
-      date = `${lastMessage.timestamp.slice(12, 17)}`
+    if ( lastMessage.timestamp.slice(0, 10 ) === moment().format().slice(0, 10) ) {
+      date = `${lastMessage.timestamp.slice(11, 16)}`
     } else if ( date === moment().subtract(1, 'days').format('YYYY-MM-DD') ){
       date = `yesterday`
     }
@@ -144,7 +150,7 @@ const ChatWithUser = ({ user_, resendMess }) => {
       <div className="user-link-in">
 
         <div className='row_cont'>
-          <img src={serverIP + user_.photo} alt={user_.username} className="user-photo" /> 
+          <img src={serverIP + user_.photo} alt={user_.username} className="user-all-photo" /> 
           <div className='count_add'>
             <p>{messCount}</p>
           </div>

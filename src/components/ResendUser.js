@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { serverIP, wsIP } from '../config'
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { setMessages, addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
+import { addMessage } from '../features/messages/messagesSlice.js';
 
 import { useUser } from '../context/userContext.js';
 
 import moment from 'moment';
+import CryptoJS from "crypto-js";
 
 const ResendUser = ({ user_, resendMess }) => {
 
@@ -46,16 +47,22 @@ const ResendUser = ({ user_, resendMess }) => {
         } if (message.type === 'resend_message_') {
           console.log('resend_message_in_ResendUser', message);
           console.log('user_.conv_in_ResendUser', user_.conv);
+
+          const key = '123'
+          const decrypted = CryptoJS.AES.decrypt(message.content, key).toString(
+            CryptoJS.enc.Utf8
+          );
+
           dispatch(addMessage({
             id: message.id,
-            content: message.content,
+            content: decrypted,
             username: message.username,
             user_id: user.id,
             unread: true,
             resend: true,
             photo: user_.photo,
             conversation_id: user_.conv,
-            timestamp: message.timestamp,
+            timestamp: message.timestamp.slice(1,17),
           }));
           navigate('/AllUsers')
         }
@@ -100,7 +107,7 @@ const ResendUser = ({ user_, resendMess }) => {
       <div className="user-link-in">
 
         <div className='row_cont'>
-          <img src={serverIP + user_.photo} alt={user_.username} className="user-photo" /> 
+          <img src={serverIP + user_.photo} alt={user_.username} className="user-all-photo" /> 
           <div className='count_add'>
             <p>{unreadMessages.length}</p>
           </div>

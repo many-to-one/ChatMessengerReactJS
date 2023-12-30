@@ -33,8 +33,8 @@
     padding: 10px;
     background-color: white;
     border-bottom: 1px solid rgb(191, 191, 191);
-    width: 300px;
-    height: 60px;
+    width: 385px;
+    height: 75px;
     cursor: pointer;
   }
 
@@ -45,8 +45,8 @@
     padding: 10px;
     background-color: white;
     border-bottom: 1px solid rgb(191, 191, 191);
-    width: 340px;
-    height: 60px;
+    width: 385px;
+    height: 75px;
     cursor: pointer;
     background-color: aquamarine;
   }
@@ -69,6 +69,7 @@
 
   .user-link {
     text-decoration: none;
+    color: #59076f;
   }
 
   .user-link-in {
@@ -79,10 +80,19 @@
     width: 340px;
   }
 
+  .user-all-photo {
+    width: 60px;
+    height: 60px;
+    /* border: 3px solid #77037B; */
+    border: 3px solid var(--primary-color);
+    border-radius: 100px;
+  }
+
   .user-photo {
-    width: 50px;
-    height: 50px;
-    border: 1px solid gray;
+    width: 60px;
+    height: 60px;
+    /* border: 3px solid #77037B; */
+    border: 3px solid white;
     border-radius: 100px;
   }
 
@@ -97,7 +107,7 @@
     align-items: center;
     margin-top: -20px;
     margin-left: -10px;
-    background-color: #77037B; 
+    background-color: var(--primary-color);
     width: 20px;
     height: 20px;
     border-radius: 50px;
@@ -128,6 +138,7 @@
     align-items: center;
     justify-content: space-between;
     height: 30px;
+    width: 290px;
   }
 
   .line_cont p {

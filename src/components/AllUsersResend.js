@@ -1,19 +1,16 @@
 import React, {useEffect, useState} from 'react';
-import Cookies from 'js-cookie';
-import axios from 'axios';
-import {wsIP, serverIP} from '../config.js';
+import {wsIP} from '../config.js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../styles/AllUsers.css';
 import { useUser } from '../context/userContext.js';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
-import ChatWithUser from './ChatWithUser.js';
+import { addMessage } from '../features/messages/messagesSlice.js';
+import CryptoJS from "crypto-js";
 import ResendUser from './ResendUser.js';
 
 const AllUsersResend = (params) => {
 
-    const [users, setUsers] = useState([])
     const [socket, setSocket] = useState([])
     const [selectedUsers, setSelectedUsers] = useState([]);
     const navigate = useNavigate();
@@ -37,37 +34,6 @@ const AllUsersResend = (params) => {
 
     }, [resendMess, navigate])
 
-    // useEffect(() => {
-
-    //   console.log('usersForReasend', usersForReasend)
-
-    //     // Define an Axios config object with the Authorization header.
-    //     const config = {
-    //       headers: {
-    //         Authorization: `Bearer ${user.token}`,
-    //         userId: user.id,
-    //       },
-    //     };
-    
-    //     // Make an Axios GET request with the token in the headers.
-    //     axios.get(`${serverIP}/auth/users/`, config)
-    //       .then((response) => {
-    //         if(response.status === 200){
-    //           const fetchedUsers = response.data.users; 
-    //           // console.log('usersForReasend', usersForReasend)
-    //           setUsers(fetchedUsers);
-    //           findConvId()
-    //         }
-    //       })
-    //       .catch((error) => {
-    //         if(error.response.status === 403){
-    //           navigate('/login')
-    //         }else if (error.response.status === 404){
-    //           navigate('/404')
-    //         }
-    //       });
-    //   }, [user.token]);
-
 
       const test = async () => {
         if (selectedUsers) {
@@ -80,33 +46,6 @@ const AllUsersResend = (params) => {
           }
         }
       };
-
-
-    //   const findIt = async(user_) => {
-
-    //     // Fetch conversation data for the selected user based on userId.
-    //     axios
-    //     .post(
-    //       `${serverIP}/conversations/`,
-    //       {
-    //         user: [parseInt(user.id), user_],
-    //       },
-    //       { 
-    //         headers: {
-    //           Authorization: `Bearer ${user.token}`,
-    //         },
-    //       }
-    //     )
-    //     .then((response) => {
-    //       const conversationData = response.data.conversation;
-    //       console.log('conversationData', conversationData)
-    //       initializeWebSocket(conversationData.id)
-    //     })
-    //     .catch((error) => {
-  
-    //     });
-  
-    //   }
 
 
       const waitForOpenConnection = (socket) => {
@@ -133,14 +72,16 @@ const AllUsersResend = (params) => {
         console.log('initializeWebSocket', convId) 
 
           const ws = new WebSocket(
-            // `${wsIP}/ws/conversation/${conv_name}/?userId=${user.id}&receiverId=${convId}&token=${user.token}`
             `${wsIP}/ws/conversation/${convId}/?userId=${user.id}`
           );
           setSocket(ws);
           if (ws.readyState !== ws.OPEN) { 
             try {
                 await waitForOpenConnection(ws)
-                ws.send(JSON.stringify({ type: 'resend_message', message: resendMess, id: convId }));
+                const key = '123'
+                const encryptedMess = CryptoJS.AES.encrypt(resendMess, key).toString()
+                console.log('resendMessage', encryptedMess);
+                ws.send(JSON.stringify({ type: 'resend_message', message: encryptedMess, id: convId }));
                 navigate('/allUsers')
             } catch (err) { console.error(err) }
         } else {
@@ -165,10 +106,9 @@ const AllUsersResend = (params) => {
               photo: message.photo,
               conversation_id: convId,
               resend: true,
-              timestamp: message.timestamp,
+              timestamp: message.timestamp.slice(1,17),
             }));
           }
-          // console.log('resend store, convId', allMessages, convId)
         }
 
       };
@@ -201,20 +141,8 @@ const AllUsersResend = (params) => {
                   resendMess={resendMess}
                 />
               </div>
-  
-              // <div className="user-list-item" key={user.id} onClick={() =>  handleUserSelect(user)}>
-              //   <div className="user-link-in">
-              //     {user.photo ? (
-              //       <img src={serverIP + user.photo} alt={user.username} className="user-photo" />
-              //     ) : (
-              //       <img src={serverIP + 'media/profile_photos/default.png'} alt={user.username} className="user-photo" />
-              //     )}
-              //     {user.username}
-              //   </div>
-              // </div>
             ))}
           </div>
-          <button onClick={() => test()}>Send</button>
         </div>
       );
   

@@ -20,10 +20,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { wsIP, serverIP } from '../config.js';
 import { useLocation, useNavigate } from 'react-router-dom';
+import CryptoJS from "crypto-js";
+
 import ConfirmationDialog from './ConfirmationDialog.js';
 import { useUser } from '../context/userContext.js';
+import { wsIP, serverIP } from '../config.js';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessage, removeMessage, markMessagesAsRead } from '../features/messages/messagesSlice.js';
@@ -71,8 +73,8 @@ const Conversation = ( props ) => {
   const [dialog, setDialog] = useState(false)
   const [delQuestion, setDelQuestion] = useState(false)
 
-  const [writing, setWriting] = useState('')
-  const [active, setActive] = useState('')
+  const [writing, setWriting] = useState(false)
+  const [active, setActive] = useState(false)
   const [letter, setLetter] = useState('')
 
   const navigate = useNavigate();
@@ -80,7 +82,13 @@ const Conversation = ( props ) => {
   // const to make a new message been on the bottom of the chat
   const chatContainerRef = useRef(null);
 
-  const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}`); // &token=${user.token}&receiverId${receiver.id}
+  useEffect(() => {
+    if(user.id === null) {
+      navigate('/')
+    }
+  },[])
+
+  const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}`); 
 
   // Show the bottom message with open the chat;
   // chatContainerRef is a var of useRef;
@@ -96,19 +104,9 @@ const Conversation = ( props ) => {
     // console.log('window.scrollTo', chatContainerRef.current.scrollHeight)
   }, [])
 
-  const sleep = (milliseconds) => {
-    return new Promise(resolve => setTimeout(resolve, milliseconds));
-  };
-
 
 
   useEffect(() => {
-
-    // const ws = new WebSocket(`${wsIP}/ws/conversation/${receiver.conv}/?userId=${user.id}`);
-
-    // console.log('receiverMessages_', receiverMessages_)
-    console.log('unreadMessages_', unreadMessages_)
-    // dispatch(markMessagesAsRead(unreadMessages_))
 
     ws.onopen = () => {
       ws.send(JSON.stringify({type: 'on_page', userId: user.id, receiverId: receiver.id, chatId: receiver.conv}))
@@ -119,101 +117,68 @@ const Conversation = ( props ) => {
 
   useEffect(() => {
 
-    // const sleep = (milliseconds) => {
-    //   return new Promise(resolve => setTimeout(resolve, milliseconds));
-    // };
-
-    // const writingFunc = async () => {
-    //   setWriting(true)
-    //   await sleep(1000)
-    //   setWriting(false)
-    // }
-
-    const writingFunc = () => {
-      // Set the state to true
-      setWriting(true);
-  
-      // After 1 second, set the state back to false
-      setTimeout(() => {
-        setWriting(false);
-      }, 2000);
-    };
-
-    // console.log('messages store', messages, receiver.conv);
-    // console.log('ssock', ssock);
-
-    if ( lastMessage.user_id === receiver.id ) {
-      // console.log('inConv_@@@@@', lastMessage.user_id, receiver.id, receiver.conv )
-      const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
-      const receiverMessages_ = messages.filter((message) => message.user_id === receiver.id);
-      const unreadMessages_ = receiverMessages_.filter((message) => message.unread === true)
-      // console.log('receiverMessages_', receiverMessages_)
-      // console.log('unreadMessages_', unreadMessages_)
-      
+    if (lastMessage) {
+      if ( lastMessage.user_id === receiver.id ) {
+        const messages = allMessages.filter((message) => message.conversation_id === receiver.conv);
+        const receiverMessages_ = messages.filter((message) => message.user_id === receiver.id);     
+      }
     }
     // message logic
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
+
+      if (message.type === 'typing_') {
+        if (message.user_id === receiver.id) {
+          setWriting(message.typing)
+        }
+      }
+
       if (message.type === 'message_deleted') {
-        // console.log('message_deleted', message.id);
         dispatch(removeMessage(message.id));
-      } else if ( message.type === 'resend_message_' ) {
-        console.log('resend_message_in_conv', message, user);
+      } 
+      
+      if ( message.type === 'resend_message_' ) {
+
+        const key = '123'
+        const decrypted = CryptoJS.AES.decrypt(message.content, key).toString(
+          CryptoJS.enc.Utf8
+        );
+
         dispatch(addMessage({
           id: message.id,
-          content: message.content,
+          content: decrypted,
           username: message.username,
           user_id: receiver.id,
           unread: true,
           resend: true,
           photo: user.photo,
           conversation_id: receiver.conv,
-          timestamp: message.timestamp,
+          timestamp: message.timestamp.slice(1,17),
         }));
-      } if ( message.type === 'on_page_response' ){
-        // writingFunc()
-        console.log('on_page from server @@@@@@@',user.id, receiver.id, message.userId, message)
-        console.log('lastMessage', lastMessage)
-        // const myMessages = messages.filter((message) => message.user_id === user.id);
-        //   const unreadMessages = myMessages.filter((message) => message.unread === true)
-        //   dispatch(markMessagesAsRead(unreadMessages))
-        // console.log('markMessagesAsRead @@@@@@@@@@@', message.userId, receiver.id)
+      } 
+      
+      if ( message.type === 'on_page_response' ){
+
         if ( message.userId === receiver.id ){
-          console.log('message.userId === receiver.id @@@@@@@', message.userId, receiver.id)
-          // if (write === true) {
-          //   setWriting('writting...')
-          // }
 
           // In this condition the messege will be read for the sender if he is in connversation
           // at the moment when the reseiver enter to the conversation
           const myMessages = messages.filter((message) => message.user_id === user.id);
           const unreadMessages = myMessages.filter((message) => message.unread === true)
           dispatch(markMessagesAsRead(unreadMessages))
-          // console.log('piszę... @@@@@@@', message.userId, receiver.id) 
-
-          // setLetter('active')
-          // setActive('pisze...')
-          // setWriting(false)
-          // if (!letter) {
-          //   setTimeout(() => {
-          //     setWriting(true);
-          //     console.log('piszę... @@@@@@@')
-          //   }, 2000);
-          // }
-          // writingFunc()
         } 
       } 
-      // if ( lastMessage.user_id === receiver.id ) {
-      //   const receiverMessages_ = messages.filter((message) => message.user_id === receiver.id);
-      //   const unreadMessages_ = receiverMessages_.filter((message) => message.unread === true)
-      //   console.log('unreadMessages_', unreadMessages_)
-      //   dispatch(markMessagesAsRead(unreadMessages_))
-      // }
+
       if ( message.type === 'received_message' ) {
-        // console.log('received new message', message);
+
+        const key = '123'
+        const decrypted = CryptoJS.AES.decrypt(message.content, key).toString(
+          CryptoJS.enc.Utf8
+        );
+
         dispatch(addMessage({
           id: message.id,
-          content: message.content,
+          content: decrypted,
           username: message.username,
           user_id: message.user_id,
           unread: message.unread,
@@ -221,8 +186,27 @@ const Conversation = ( props ) => {
           conversation_id: message.conversation_id,
           timestamp: message.timestamp.slice(1,17),
         }));
-        console.log('message timestamp --- ', message.timestamp.slice(1,17))
+
         setHasScrolled(false) // Get you to the bottom of the page if is incoming data from the server
+
+        // if (message.user_id !== user.id){
+        //   if ("Notification" in window) {
+        //     // Request permission for notifications
+        //     Notification.requestPermission().then((permission) => {
+        //       if (permission === "granted") {
+        //         // Show a notification
+        //         new Notification("New Message", {
+        //           body: `New message from ${message.username}: ${message.content}`,
+        //         });
+        //       }
+        //     });
+        //   } else {
+        //     // Handle the case where notifications are not supported
+        //     console.log("Notifications not supported in this browser");
+        //     // You can also provide a user-friendly message or fallback behavior
+        //   }
+        // }
+        
       }
     }
 
@@ -237,11 +221,11 @@ const Conversation = ( props ) => {
   }, []);
 
   const sendMessage = () => {
-    console.log('sendMessage ssock', socket);
     if (socket && socket.readyState === WebSocket.OPEN) {
       if (newMessage) {
-        console.log('sendMessage', newMessage, receiver.conv);
-        socket.send(JSON.stringify({type: 'new_message', message: newMessage, id: receiver.conv, receiverId: receiver.id, senderId: user.id }));
+        const key = '123'
+        const encryptedMess = CryptoJS.AES.encrypt(newMessage, key).toString()
+        socket.send(JSON.stringify({type: 'new_message', message: encryptedMess, id: receiver.conv, receiverId: receiver.id, senderId: user.id }));
         setNewMessage('');
 
         // Calculate the new scroll position with an offset of 20px
@@ -256,8 +240,23 @@ const Conversation = ( props ) => {
 
   const handleChange = (e) => {
     setNewMessage(e.target.value);
-    console.log('writing...')
   };
+
+
+  const hangleTyping = () => {
+
+    // Notify the server that the user is typing
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      // console.log('handleChange socket @@@@@@@', socket)
+    socket.send(JSON.stringify({ type: 'typing', typing: true, user: user.id }));
+
+    // Set a timeout to stop typing after a few seconds
+    setTimeout(() => {
+      socket.send(JSON.stringify({ type: 'typing', typing: false, user: user.id }));
+    }, 2000);
+  }
+
+  }
 
   const deleteMess = (id) => {
     console.log('deleteMess', id)
@@ -273,7 +272,6 @@ const Conversation = ( props ) => {
   }
 
   const confirmDelete = (id) => {
-    console.log('confirmDelete', id)
     setConfirmationMessage(`Are you sure you want to delete this message?`);
     setMessageToDelete(id);
     if (showConfirmation) {
@@ -310,7 +308,6 @@ const delQuest = () => {
 
 
   const delUser = (id) => {
-    console.log('id', id)
     axios
     .post(
       `${serverIP}/delUser/`,
@@ -325,7 +322,6 @@ const delQuest = () => {
       }
     )
     .then((response) => {
-      console.log('delUser', response);
       if ( response.status === 200 ) {
         navigate('/allUsers')
       }
@@ -348,18 +344,7 @@ const delQuest = () => {
 
       <div className='conv_header'>
         <div className={`${showConfirmation ? ' confirm_row_cont' : 'conv_row_cont'}`}>
-          {/* <div className='conv_start'>
-            <p onClick={() => getBack()}>
-              <TiArrowLeft 
-                size={35}
-              />
-            </p>
-            { receiver.photo ?
-              <img src={serverIP + receiver.photo} alt={receiver.username} className="user-photo" />
-              :
-              <img src={serverIP + 'media/profile_photos/profile.png'} alt={receiver.username} className="user-photo" />
-            }
-          </div> */}
+
           {showConfirmation ?
             <ConfirmationDialog
               conversation={conversation}
@@ -383,10 +368,13 @@ const delQuest = () => {
                   <img src={serverIP + 'media/profile_photos/profile.png'} alt={receiver.username} className="user-photo" />
                 }
                 <p>{receiver.username}</p>
+                { writing &&
+                  <p>writing...</p>
+                }
               </div>
               
               <TiEquals 
-                size={30}
+                size={40}
                 onClick={() => showDialog()}
               />
             </div>
@@ -395,7 +383,7 @@ const delQuest = () => {
       </div>
 
       { dialog &&
-        <div className='conv_header'>
+        <div className='conv_header_qwe'>
           <div className='confirm_row_cont'>
             <TiCameraOutline 
               size={30}
@@ -423,7 +411,7 @@ const delQuest = () => {
               <div key={index}>
                 {message.user_id === user.id ?
                   <div className='message right'>
-                    <div className='conf_dialog'>
+                    <div className='conf_mess'>
                       {user.photo ? 
                         <img src={serverIP + user.photo} alt={message.username} className="userPhotoRight" />
                         :
@@ -451,25 +439,27 @@ const delQuest = () => {
                 <div>
                   {message.resend ? 
                     <div className='message left'>
-                      <div className='conf_dialog'>
+                      <div className='conf_mess'>
                         {receiver.photo ? 
                           <img src={serverIP + receiver.photo} alt={message.username} className="userPhotoLeft" />
                           :
                           <img src={serverIP + '/media/profile_photos/profile.png'} alt={message.username} className="userPhotoLeft" /> 
                         }
                         <p>{message.content}</p>
+                      </div> 
                         <div className='conv_row_cont'>
                           <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
-                          <TiArrowBackOutline 
-                            size={20}
-                            color='#77037B'
-                          />
+                          <p className='unread'>
+                            <TiArrowBackOutline 
+                              size={20}
+                              color='#77037B'
+                            />
+                          </p>
                         </div>
-                      </div> 
                     </div>
                   :
                     <div className='message left'>
-                      <div className='conf_dialog'>
+                      <div className='conf_mess'>
                         {receiver.photo ? 
                           <img src={serverIP + receiver.photo} alt={message.username} className="userPhotoLeft" />
                           :
@@ -495,8 +485,8 @@ const delQuest = () => {
           value={newMessage}
           onChange={handleChange}
           placeholder="Type your message..."
+          onKeyDown={hangleTyping}
         />
-        {/* <button onClick={sendMessage}>Send</button> */}
         <TiLocationArrowOutline 
           onClick={sendMessage}
           size={30}

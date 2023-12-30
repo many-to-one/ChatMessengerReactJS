@@ -60,9 +60,11 @@ const Header = () => {
             <div className='nav_row_cont'>
              <li><Link to="/allUsers">
               {user.photo ? 
-                <img src={serverIP + user.photo} alt={user.username} className="userPhotoRight" />
+                <div className='on_photo'>
+                  <img src={serverIP + user.photo} alt={user.username} className="header_photo" />
+                </div>
                 :
-                <img src={serverIP + 'media/profile_photos/default.png'} alt={user.username} className="userPhotoRight" /> 
+                <img src={serverIP + 'media/profile_photos/default.png'} alt={user.username} className="header_photo" /> 
               }
               </Link>
              </li>

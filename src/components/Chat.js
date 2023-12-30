@@ -8,19 +8,15 @@ import ConfirmationDialog from './ConfirmationDialog.js';
 import { useUser } from '../context/userContext.js';
 import AddUsersToChat from './AddUsersToChat.js';
 
+import CryptoJS from "crypto-js";
+
 import { useDispatch, useSelector } from 'react-redux';
 import { addMessage, removeMessage } from '../features/messages/messagesSlice.js';
 
 import { 
   TiArrowLeft, 
-  TiEquals, 
-  // TiDeleteOutline, 
-  // TiCameraOutline, 
-  // TiVolumeMute, 
-  // TiUserDeleteOutline, 
-  // TiEyeOutline, 
-  // TiLocationArrowOutline,
-  // TiArrowBackOutline, 
+  TiEquals,
+  TiLocationArrowOutline, 
 } 
 from "react-icons/ti";
 
@@ -37,7 +33,6 @@ const Chat = (props) => {
   const dispatch = useDispatch();
   const allChatMessages = useSelector((state) => state.messages);
   const messages = allChatMessages.filter((message) => message.chat_id === chat.id);
-  console.log('allChatMessages', messages)
   const users = useSelector((state) => state.users);
   const chatUsers = useSelector((state) => state.chatUsers);
   const chatUs = users.filter((user) => chat.user.includes(user.id));
@@ -45,8 +40,6 @@ const Chat = (props) => {
   const chatChat = users.filter((user) => user.id === chat.user)
 
   const [data, setData] = useState(null)
-
-  // const [messages, setMessages] = useState([]);
   const [usersPhotos, setUsersPhotos] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [socket, setSocket] = useState(null);
@@ -78,32 +71,8 @@ const Chat = (props) => {
   //  ################################################################################################### //
 
   useEffect(() => {
-    window.scrollTo({ top: chatContainerRef.current.scrollHeight})
-    console.log('CHAT', chat.user)
-    console.log('USERS', users)  
+    window.scrollTo({ top: chatContainerRef.current.scrollHeight}) 
   })
-
-
-  // useEffect(() => {
-  //   if(chatUsers_.length === 0){
-  //     updateChatUsers();
-  //   }
-  // },[])
-
-
-  // const updateChatUsers = () => {
-  //   console.log('updateChatUsers worked')
-  //   chat.user.map((us) => {
-  //     users.map((user) => {
-  //       if (us === user.id) {
-  //         setChatUsers_((prevUsers) => [...prevUsers, user]); // Collect matching users in an array
-  //       }
-  //     });
-  //   });  
-  // };
-
-  // console.log('chatUsers_@_', chatUsers_);
-
 
 
   //  ################################################################################################### //
@@ -122,7 +91,6 @@ const Chat = (props) => {
 
     axios.get(`${serverIP}/chatUsers/${chatID}/`, data)
     .then((response) => {
-      console.log('chatUsers axios', response)
       setChatUsers_(response.data.chat)
       setCreater(response.data.creater)
     })
@@ -139,14 +107,18 @@ const Chat = (props) => {
       const message = JSON.parse(event.data);
 
       if (message.type === 'message_deleted') {
-        console.log('message_deleted', message.id);
         dispatch(removeMessage(message.id));
         // Handle message deletion by filtering out the deleted message
       } else if (message.type === 'added_message') {
 
+        const key = '123'
+        const decrypted = CryptoJS.AES.decrypt(message.message, key).toString(
+          CryptoJS.enc.Utf8
+        );
+
         dispatch(addMessage({
           id: message.id,
-          content: message.message,
+          content: decrypted,
           username: message.username,
           user_id: message.user_id,
           unread: message.unread,
@@ -155,14 +127,11 @@ const Chat = (props) => {
           timestamp: message.timestamp.slice(1,17),
         }));
 
-        console.log('addMessage', message);
-
       } else if (message.type == 'added_users') {
 
         setShowAddUsers(false);
 
         let newUser = users.filter((us) => us.id === message.id)
-        console.log('@_newUser_@', newUser)
         setChatUsers_((usr) => [...usr, newUser[0]])
       
       } else if (message.type == 'user_deleted') {
@@ -199,7 +168,10 @@ const Chat = (props) => {
   const sendMessage = () => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       if (newMessage) {
-        socket.send(JSON.stringify({type: 'new_message', message: newMessage, id: chatID }));
+        const key = '123'
+        const encryptedMess = CryptoJS.AES.encrypt(newMessage, key).toString()
+        console.log('sendMessage', encryptedMess);
+        socket.send(JSON.stringify({type: 'new_message', message: encryptedMess, id: chatID }));
         setNewMessage('');
         // set up the sent message on the bottom
         window.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" })
@@ -265,6 +237,7 @@ const Chat = (props) => {
 
 
   const setDeleteUser = (usr) => {
+    console.log('usr delete @@@@@', usr)
     setUserDelQuest(true)
     setUserToDelete(usr.id) 
     setData(usr)
@@ -329,10 +302,10 @@ const Chat = (props) => {
 
     <div className='chat-container'>
 
-        <div className='conv_header'>
+        <div className='chat_header'>
   
           {showConfirmation ? (
-            <div className='confirm_row_cont'>
+            <div className='confirm_row_cont'> 
               <ConfirmationDialog
                 data={data}
                 addOpen={showAdd}
@@ -358,12 +331,12 @@ const Chat = (props) => {
                     <div key={usr.id}>
                       {user.username === creater ?
                         <div className='head_column' onClick={() => setDeleteUser(usr)}>
-                          <img src={serverIP + usr.photo} className="userPhotoRight" alt="User Photo" />
+                          <img src={serverIP + usr.photo} className="userPhotoChat" alt="User Photo" />
                           <p>{usr.username}</p>
                         </div>
                         :
                         <div className='head_column'>
-                          <img src={serverIP + usr.photo} className="userPhotoRight" alt="User Photo" />
+                          <img src={serverIP + usr.photo} className="userPhotoChat" alt="User Photo" />
                           <p>{usr.username}</p>
                         </div>
                       }
@@ -409,30 +382,25 @@ const Chat = (props) => {
                   }
                 </div>
               :
-              <div>
+              // <div>
                 <div className='message left'>
-                <div className='conf_dialog'>
-                  {chatUsers_.map((usr, index) => (
-                    <div key={index}>
-                    {message.user_id === usr.id?
-                      <img src={serverIP + usr.photo} className="userPhotoRight" />
-                      :
-                      // <img src={serverIP + '/media/profile_photos/profile.png'} className="userPhotoRight" /> 
-                      null
-                    }
-                    </div>
-                  ))}
+                  <div className='conf_dialog'>
+                    {chatUsers_.map((usr, index) => (
+                      <div key={index}>
+                      {message.user_id === usr.id?
+                        <img src={serverIP + usr.photo} alt={usr.username} className="userPhotoLeft"/>
+                        :
+                        null
+                      }
+                      </div> 
+                    ))}
+                      <div>
+                        <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
+                        <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                      </div>
                   
-                    {/* {user.photo ? 
-                      <img src={serverIP + user.photo} className="userPhotoRight" />
-                      :
-                      <img src={serverIP + '/media/profile_photos/profile.png'} className="userPhotoRight" /> 
-                    } */}
-                    <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
-                  </div>
                   </div>
                 </div>
-              // </div>
               }
             </div>
           ))}
@@ -454,7 +422,11 @@ const Chat = (props) => {
             onChange={handleChange}
             placeholder="Type your message..."
           />
-          <button className='sendButton' onClick={sendMessage}>Send</button>
+          <TiLocationArrowOutline 
+            onClick={sendMessage}
+            size={30}
+            color='#77037B'
+          />
       </div>
     </div>
   );

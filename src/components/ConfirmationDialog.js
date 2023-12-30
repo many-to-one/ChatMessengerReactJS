@@ -102,12 +102,12 @@ const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCa
           />  
         </p> 
          <div className='head_column'>
-            <img src={serverIP + data.photo} className="userPhotoRight" alt="User Photo"></img>
+            <img src={serverIP + data.photo} className="userPhotoChat" alt="User Photo" />
             <p>{data.username}</p>
           </div>
           <TiTrash 
             onClick={() => onConfirm(data)}
-            size={30}
+            size={45}
           />
        </div>
      </div>
@@ -125,7 +125,7 @@ const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCa
             </p>  
             <p>Delete chat?</p>
             <TiTrash 
-                size={30}
+                size={45}
                 onClick={() => delChatAbsolute(chat_id)}
               />
           </div>
@@ -153,11 +153,11 @@ const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCa
               />  
             </p>  
             <TiUserAddOutline 
-              size={30}
+              size={45}
               onClick={addOpen}
             />
             <TiTrash 
-                size={30}
+                size={45}
                 onClick={() => delChat_(chat_id)}
               />
           </div>
@@ -173,7 +173,7 @@ const ConfirmationDialog = ({ conversation, resendMess, message, onConfirm, onCa
           onClick={() => resend(resendMess)}
         />
         <TiTrash 
-            size={30}
+            size={35}
             onClick={onConfirm}
           />
       </div>

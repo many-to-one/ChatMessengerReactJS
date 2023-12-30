@@ -6,6 +6,11 @@
   min-height: 100vh;
 }
 
+:root {
+  --primary-color: #956DE8;
+  /* --secondary-color: #2ecc71; */
+}
+
 /* .baseCont {
   margin-top: 65px;
 } */
