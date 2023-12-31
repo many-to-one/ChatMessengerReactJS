@@ -114,12 +114,24 @@ const Conversation = ( props ) => {
   const connectionRef = useRef();
 
   useEffect(() => {
+
+    // const cleanup = () => {
+    //   // Close the current stream and stop tracks
+    //   if (stream) {
+    //     const tracks = stream.getTracks();
+    //     tracks.forEach((track) => track.stop());
+    //   }
+  
+    //   // Destroy the peer connection
+    //   if (connectionRef.current) {
+    //     connectionRef.current.destroy();
+    //   }
+    // };
+
     navigator.mediaDevices.getUserMedia({ video: true, audio: true})
     .then((currentStream) => {
       setStream(currentStream);
-      console.log('currentStream', currentStream)
       myVideo.current.srcObject = currentStream;
-      console.log('myVideo', myVideo)
     })
     .catch((error) => {
       console.log('currentStream error', error)
@@ -133,7 +145,8 @@ const Conversation = ( props ) => {
 
     connectionRef.current = peer;
 
-  },[active])
+  },[active === true])
+
 
 
   useEffect(() => {
@@ -237,6 +250,11 @@ const Conversation = ( props ) => {
         //   }
         // }
         
+      }
+
+      if (message.type === 'call_in_response') {
+        setActive(true)
+        console.log('call_in_response', message)
       }
     }
 
@@ -372,7 +390,9 @@ const delQuest = () => {
     if (active) {
       setActive(false)
     } else {
-      setActive(true)
+      if (socket && socket.readyState === WebSocket.OPEN){
+        socket.send(JSON.stringify({type: 'call_in', caller: user.id, receiver: receiver.id}));
+      }
     }
   }
 
