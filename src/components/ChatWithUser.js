@@ -75,7 +75,11 @@ const ChatWithUser = ({ user_, resendMess }) => {
           }));
 
           console.log('messCount', messCount)
-          setMessCount(prevMessCount => prevMessCount + 1);
+          if (messCount === 0) {
+            setMessCount(0)
+          } else {
+            setMessCount(prevMessCount => prevMessCount + 1);
+          }
 
         } if (message.type === 'on_page_response') {
           console.log('users', user.id, user_.id, message.user_id)

@@ -22,6 +22,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CryptoJS from "crypto-js";
+import Peer from 'simple-peer';
 
 import ConfirmationDialog from './ConfirmationDialog.js';
 import { useUser } from '../context/userContext.js';
@@ -42,6 +43,8 @@ import {
   TiArrowBackOutline, 
 } 
 from "react-icons/ti";
+import AcceptCall from './video/AcceptCall.js';
+import { getSpaceUntilMaxLength } from '@testing-library/user-event/dist/utils/index.js';
 
 const Conversation = ( props ) => {
 
@@ -101,9 +104,36 @@ const Conversation = ( props ) => {
     if ( !hasScrolled ) {
       window.scrollTo({ top: chatContainerRef.current.scrollHeight})
     }
-    // console.log('window.scrollTo', chatContainerRef.current.scrollHeight)
   }, [])
 
+
+  const [stream, setStream] = useState(null);
+  const [call, setCall] = useState({});
+  const myVideo = useRef();
+  const userVideo = useRef();
+  const connectionRef = useRef();
+
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true})
+    .then((currentStream) => {
+      setStream(currentStream);
+      console.log('currentStream', currentStream)
+      myVideo.current.srcObject = currentStream;
+      console.log('myVideo', myVideo)
+    })
+    .catch((error) => {
+      console.log('currentStream error', error)
+    })
+
+    const peer = new Peer({ initiator: false, trickle: false, stream });
+
+    peer.on('stream', (currentStream) => {
+      myVideo.current.srcObject = currentStream;
+    });
+
+    connectionRef.current = peer;
+
+  },[active])
 
 
   useEffect(() => {
@@ -338,6 +368,16 @@ const delQuest = () => {
 
 
 
+  const getCall = () => {
+    if (active) {
+      setActive(false)
+    } else {
+      setActive(true)
+    }
+  }
+
+
+
   return (
 
     <div className='chat-container'> 
@@ -387,6 +427,7 @@ const delQuest = () => {
           <div className='confirm_row_cont'>
             <TiCameraOutline 
               size={30}
+              onClick={() => getCall()}
             />
             <TiVolumeMute 
               size={30}
@@ -406,6 +447,15 @@ const delQuest = () => {
         </div>
       }
       <div className='chat' ref={chatContainerRef}>
+
+
+      {stream && active && (
+        <div>
+          <video ref={myVideo} autoPlay playsInline width="250" height="250" controls></video>
+        </div>
+      )}
+          
+        
 
             {messages.map((message, index) => (
               <div key={index}>

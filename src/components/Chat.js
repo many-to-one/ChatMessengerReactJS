@@ -363,7 +363,7 @@ const Chat = (props) => {
             <div key={index}>
               {message.user_id === user.id ?
                 <div className='message right'>
-                  <div className='conf_dialog'>
+                  <div className='conf_mess'>
                     {user.photo ? 
                       <img src={serverIP + user.photo} className="userPhotoRight" />
                       :
@@ -384,22 +384,21 @@ const Chat = (props) => {
               :
               // <div>
                 <div className='message left'>
-                  <div className='conf_dialog'>
+                  <div className='conf_mess'>
+                    <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
+                    
                     {chatUsers_.map((usr, index) => (
                       <div key={index}>
-                      {message.user_id === usr.id?
+                      {message.user_id === usr.id &&
                         <img src={serverIP + usr.photo} alt={usr.username} className="userPhotoLeft"/>
-                        :
-                        null
                       }
                       </div> 
                     ))}
-                      <div>
-                        <p onClick={() => confirmDelete(message.id)}>{message.content}{' '}</p>
-                        <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
-                      </div>
-                  
-                  </div>
+                    
+                    </div>
+                    <div className='conv_row_cont'>
+                      <p className='timestamp'>{message.timestamp.slice(0,10)}</p>
+                    </div>
                 </div>
               }
             </div>
