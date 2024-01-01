@@ -69,6 +69,7 @@ const Conversation = ( props ) => {
   const [conversation, setConversation] = useState([]);
   const [newMessage, setNewMessage] = useState([])
   const [socket, setSocket] = useState([])
+  const [socketAll, setSocketAll] = useState([])
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
@@ -115,19 +116,6 @@ const Conversation = ( props ) => {
 
   useEffect(() => {
 
-    // const cleanup = () => {
-    //   // Close the current stream and stop tracks
-    //   if (stream) {
-    //     const tracks = stream.getTracks();
-    //     tracks.forEach((track) => track.stop());
-    //   }
-  
-    //   // Destroy the peer connection
-    //   if (connectionRef.current) {
-    //     connectionRef.current.destroy();
-    //   }
-    // };
-
     navigator.mediaDevices.getUserMedia({ video: true, audio: true})
     .then((currentStream) => {
       setStream(currentStream);
@@ -146,6 +134,33 @@ const Conversation = ( props ) => {
     connectionRef.current = peer;
 
   },[active === true])
+
+
+
+  const wsAll = new WebSocket(`${wsIP}/ws/AllUsers/${conv_name}/?userId=${user.id}&token=${user.token}`);
+
+  useEffect(() => {
+      
+      setSocketAll(wsAll)
+
+      wsAll.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'call_in_response') {
+        // setActive(true)
+        console.log('call_in_response', data)
+        navigate('/AcceptCall', { state: receiver })
+      }
+    
+      return () => {
+        if (wsAll) {
+          wsAll.close();
+        }
+      };
+
+    } 
+
+}, [user])
+
 
 
 
@@ -250,11 +265,6 @@ const Conversation = ( props ) => {
         //   }
         // }
         
-      }
-
-      if (message.type === 'call_in_response') {
-        setActive(true)
-        console.log('call_in_response', message)
       }
     }
 
@@ -390,8 +400,8 @@ const delQuest = () => {
     if (active) {
       setActive(false)
     } else {
-      if (socket && socket.readyState === WebSocket.OPEN){
-        socket.send(JSON.stringify({type: 'call_in', caller: user.id, receiver: receiver.id}));
+      if (socketAll && socketAll.readyState === WebSocket.OPEN){
+        socketAll.send(JSON.stringify({type: 'call_in', caller: user.id, receiver: receiver.conv}));
       }
     }
   }
@@ -443,7 +453,7 @@ const delQuest = () => {
       </div>
 
       { dialog &&
-        <div className='conv_header_qwe'>
+        <div className={`conv_header_qwe ${active ? 'hidden' : ''}`}>
           <div className='confirm_row_cont'>
             <TiCameraOutline 
               size={30}
@@ -466,16 +476,23 @@ const delQuest = () => {
           </div>
         </div>
       }
-      <div className='chat' ref={chatContainerRef}>
 
 
       {stream && active && (
-        <div>
-          <video ref={myVideo} autoPlay playsInline width="250" height="250" controls></video>
+        <div className='videoConv'>
+          <video ref={myVideo} autoPlay playsInline className='videoConv' controls></video>
+          <div className='call_navbar'>
+            <div className='confirm_row_cont'>
+              <TiCameraOutline 
+                size={30}
+                onClick={() => getCall()}
+              />
+            </div>
+          </div>
         </div>
       )}
-          
-        
+
+      <div className={`chat ${active ? 'hidden' : ''}`} ref={chatContainerRef}>
 
             {messages.map((message, index) => (
               <div key={index}>

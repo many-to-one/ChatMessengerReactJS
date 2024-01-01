@@ -30,6 +30,8 @@ const AllUsers = (params) => {
 
       useEffect(() => {
 
+        console.log('user.token', user.token)
+
         const fetchMessages = async () => {
           if (user.token !== null) {
             { allMessages.length === 0 &&
@@ -144,6 +146,10 @@ const AllUsers = (params) => {
             console.log('blockResponse', data)
           } else if (data.type === 'mess_count') {
             console.log('mess_count data', data);
+          } else if (data.type === 'call_in_response') {
+            // setActive(true)
+            console.log('call_in_response', data)
+            navigate('/AcceptCall', { state: data.receiver })
           }
         }
         

@@ -16,6 +16,7 @@ import FindFriends from './components/FindFriends';
 import { Provider } from 'react-redux';
 import store from './store.js'
 import AddUsersToChat from './components/AddUsersToChat.js';
+import AcceptCall from './components/video/AcceptCall.js';
 
 
 
@@ -59,6 +60,7 @@ function AppContent() {
         <Route path="/allUsersResend" element={<AllUsersResend />} />
         <Route path="/conversation" element={<Conversation />} />
         <Route path="/addUsersToChat" element={<AddUsersToChat />}/>
+        <Route path="/AcceptCall" element={<AcceptCall />}/>
       </Routes>
     </>
   );
