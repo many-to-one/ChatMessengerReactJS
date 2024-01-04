@@ -285,13 +285,29 @@ box-shadow: -1px 4px 10px -1px rgba(66, 68, 90, 1);
   font-size: 10px;
 }
 
-.videoConv {
-  position: fixed;
-  top: 50;
+.videoConvRes {
+  position: absolute;
+  top: 0;
   left: 0;
-  width: 100%; /* Make the width 100% for smaller screens */
-  height: auto;
-  /* margin-left: -150px; */
+  width: 150%;
+  height: 150%;
+  margin-left: -150px;
+  margin-top: -385px;
+}
+
+.videoConv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 50%;
+  margin-top: 111%;
+  margin-left: 25%;
+  /* background-color: rgb(45, 45, 45); */
+}
+
+.videoBack {
+  background-color: rgb(52, 51, 51);
 }
 
 .hidden {

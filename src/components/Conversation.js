@@ -41,6 +41,7 @@ import {
   TiEyeOutline, 
   TiLocationArrowOutline,
   TiArrowBackOutline, 
+  TiVideo,
 } 
 from "react-icons/ti";
 import AcceptCall from './video/AcceptCall.js';
@@ -109,7 +110,9 @@ const Conversation = ( props ) => {
 
 
   const [stream, setStream] = useState(null);
-  const [call, setCall] = useState({});
+  const [call, setCall] = useState([]);
+  const [caller, setCaller] = useState([]);
+  const [callBell, setCallBell] = useState(false);
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
@@ -119,48 +122,141 @@ const Conversation = ( props ) => {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true})
     .then((currentStream) => {
       setStream(currentStream);
-      myVideo.current.srcObject = currentStream;
+      // myVideo.current.srcObject = currentStream;
     })
     .catch((error) => {
       console.log('currentStream error', error)
     })
 
-    const peer = new Peer({ initiator: false, trickle: false, stream });
-
-    peer.on('stream', (currentStream) => {
-      myVideo.current.srcObject = currentStream;
-    });
-
-    connectionRef.current = peer;
-
-  },[active === true])
-
-
-
-  const wsAll = new WebSocket(`${wsIP}/ws/AllUsers/${conv_name}/?userId=${user.id}&token=${user.token}`);
-
-  useEffect(() => {
-      
-      setSocketAll(wsAll)
-
-      wsAll.onmessage = (event) => {
+    ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'call_in_response') {
-        // setActive(true)
         console.log('call_in_response', data)
-        navigate('/AcceptCall', { state: receiver })
+        setCall(data.signalData)
       }
-    
-      return () => {
-        if (wsAll) {
-          wsAll.close();
+    }
+
+  },[])
+
+
+
+  const getCall = () => {
+    if (active) {
+      setActive(false);
+      console.log('setActive(false)');
+    } else {
+      setActive(true);
+      console.log('setActive(true)');
+
+      ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+        if (data.type === 'call_in_response') {
+          console.log('call_in_response', data)
+          setCall(data.signalData)
         }
-      };
+      }
+  
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then((currentStream) => {
+          setStream(currentStream);
+          myVideo.current.srcObject = currentStream;
+  
+          const peer = new Peer({ initiator: true, trickle: false, stream });
+  
+          peer.on('signal', (data) => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'call_in',
+                caller: user.id,
+                signalData: data,
+              }));
+            }
+          });
+  
+          peer.on('stream', (currentStream) => {
+            userVideo.current.srcObject = currentStream;
+          });
+  
+          ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+  
+            if (data.type === 'answer_call_response') {
+              console.log('answer_call_response inside', data);
+              setCallAccepted(true);
+              peer.signal(data.signal);
+            }
+          };
+        })
+        .catch((error) => {
+          console.log('Error getting user media:', error);
+        });
+    }
+  };
 
-    } 
 
-}, [user])
+  const [callAccepted, setCallAccepted] = useState(false);
+  const [recPeer, setRecPeer] = useState([]);
+  const answerCall = () => {
 
+    // if (active) {
+    //   setActive(false);
+    //   console.log('setActive(false)');
+    // } else {
+      setActive(true);
+      console.log('setActive(true)');
+
+      console.log('answerCall Call', call)
+
+      setCallAccepted(true);
+
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then((currentStream) => {
+          setStream(currentStream);
+          myVideo.current.srcObject = currentStream;
+        })
+      
+      const peer = new Peer({ initiator: false, trickle: false, stream });
+
+      console.log('answerCall peer', peer)
+
+      peer.on('signal', (data) => {
+        console.log('socket answerCall', data)
+
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'answer_call',
+              signal: data,
+              receiver: receiver.id,
+            }));
+          }
+
+      });
+
+      setRecPeer(peer)
+
+      peer.on('stream', (currentStream) => {
+        console.log('stream answerCall', currentStream)
+        userVideo.current.srcObject = currentStream;
+      });
+
+      peer.signal(call);
+
+      connectionRef.current = peer;
+    // }
+  };
+
+
+
+  const leaveCall = () => {
+    console.log('leaveCall')
+    setActive(false);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'leave_call',
+      }));
+    }
+    // connectionRef.current.destroy();
+  };
 
 
 
@@ -265,6 +361,22 @@ const Conversation = ( props ) => {
         //   }
         // }
         
+      }
+
+      if (message.type === 'call_in_response') {
+        console.log('call_in_response', message, user.id)
+        setCall(message.signalData)
+        setCaller(message.caller)       
+        setCallBell(true)
+        setActive(true)
+      }
+
+      if (message.type === 'leave_call_response') {
+        console.log('leave_call_response')
+        // setCall([])
+        setCallBell(false)
+        setActive(false)
+        navigate('/AllUsers')
       }
     }
 
@@ -396,21 +508,9 @@ const delQuest = () => {
 
 
 
-  const getCall = () => {
-    if (active) {
-      setActive(false)
-    } else {
-      if (socketAll && socketAll.readyState === WebSocket.OPEN){
-        socketAll.send(JSON.stringify({type: 'call_in', caller: user.id, receiver: receiver.conv}));
-      }
-    }
-  }
-
-
-
   return (
 
-    <div className='chat-container'> 
+    <div className={`chat-container ${active ? 'videoBack' : ''}`}> 
 
       <div className='conv_header'>
         <div className={`${showConfirmation ? ' confirm_row_cont' : 'conv_row_cont'}`}>
@@ -443,6 +543,17 @@ const delQuest = () => {
                 }
               </div>
               
+              { callBell ? (
+                <TiVideo 
+                size={20}
+                onClick={() => leaveCall()}
+              />
+              ):(
+                <TiVideo 
+                size={30}
+                onClick={() => getCall()}
+              />
+              ) }
               <TiEquals 
                 size={40}
                 onClick={() => showDialog()}
@@ -457,7 +568,6 @@ const delQuest = () => {
           <div className='confirm_row_cont'>
             <TiCameraOutline 
               size={30}
-              onClick={() => getCall()}
             />
             <TiVolumeMute 
               size={30}
@@ -478,19 +588,25 @@ const delQuest = () => {
       }
 
 
+      { callBell &&
+        <AcceptCall 
+          onConfirm={() => answerCall()}
+          myVideo={call}
+        />
+      }
+
+
       {stream && active && (
-        <div className='videoConv'>
+        <div className='videoBack'>
           <video ref={myVideo} autoPlay playsInline className='videoConv' controls></video>
-          <div className='call_navbar'>
-            <div className='confirm_row_cont'>
-              <TiCameraOutline 
-                size={30}
-                onClick={() => getCall()}
-              />
-            </div>
-          </div>
         </div>
       )}
+
+      {callAccepted && (
+        <div>
+          <video ref={userVideo} autoPlay playsInline className='videoConvRes' controls></video>
+        </div>
+      )} 
 
       <div className={`chat ${active ? 'hidden' : ''}`} ref={chatContainerRef}>
 
